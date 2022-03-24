@@ -1,6 +1,5 @@
 import traceback
 import requests
-import sys
 import random
 
 from difflib import get_close_matches as gcm
@@ -296,6 +295,7 @@ def gameDev(gameID):
                print('######################################################')
                return None
 
+
 def gamePub(gameID):
      # <  Returns string as a connected elements of an array >
 
@@ -311,7 +311,101 @@ def gamePub(gameID):
                print(f"ERROR OF PUBLIC FUNCTION - gamePub. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
                return None
+
+
+def gameGenre(gameID, arrayasoutput = False):
+
+     try:
+          if not __isSuccess(gameID) : return None
+
+          gamejs = __getJSON(__API2, gameID)
+          genres = []
+
+          for item in gamejs[str(gameID)]['data']['genres']:
           
+               genres.append(item['description'])
+
+          return genres if arrayasoutput is True else ' , '.join(genres)
+
+     except Exception as e:
+               print('######################################################')
+               print(f"ERROR OF PUBLIC FUNCTION - gameGenre. ERROR AS : \n {traceback.format_exc()}")
+               print('######################################################')
+               return None
+
+
+def gameCat(gameID, arrayisoutput = False):
+
+     try:
+          if not __isSuccess(gameID) : return None
+
+          gamejs = __getJSON(__API2, gameID)
+          cat = []
+
+          for item in gamejs[str(gameID)]['data']['categories']:
+
+               cat.append(item['description'])
+
+          return cat if arrayisoutput is True else ' , '.join(cat)
+
+     except Exception as e:
+               print('######################################################')
+               print(f"ERROR OF PUBLIC FUNCTION - gameCat. ERROR AS : \n {traceback.format_exc()}")
+               print('######################################################')
+               return None
+
+
+def gamePlatform(gameID, dctasoutput = True):
+
+     try:
+          if not __isSuccess(gameID) : return None
+
+          gamejs = __getJSON(__API2, gameID) 
+          platforms = {}
+          onplatform = []
+          
+          for item in gamejs[str(gameID)]['data']['platforms']:
+          
+               platforms[item] = gamejs[str(gameID)]['data']['platforms'][item]     
+          
+          if not dctasoutput:
+               for item in platforms:
+                    if platforms[item] is True:
+                         onplatform.append(item)
+                    
+               return ' , '.join(onplatform)
+
+          return platforms
+
+     except Exception as e:
+               print('######################################################')
+               print(f"ERROR OF PUBLIC FUNCTION - gamePlatform. ERROR AS : \n {traceback.format_exc()}")
+               print('######################################################')
+               return None
+
+
+def gameSupport(gameID):
+
+     try:
+          if not __isSuccess(gameID) : return None
+
+          gamejs = __getJSON(__API2, gameID)
+          supportinfo = []
+
+          for item in gamejs[str(gameID)]['data']['support_info']:
+               supportinfo.append(gamejs[str(gameID)]['data']['support_info'][item])
+
+          return supportinfo
+
+     except Exception as e:
+               print('######################################################')
+               print(f"ERROR OF PUBLIC FUNCTION - gameSupport. ERROR AS : \n {traceback.format_exc()}")
+               print('######################################################')
+               return None
+
+
+
+
 #game = 'scavengers'
 #testID = validateGame(game, returnappID=True)
 #if validateGame(game):
@@ -322,7 +416,8 @@ def gamePub(gameID):
 #print(gameDiscount(testID))
 
 game = randomGame('id')
-print(game)
-print(f"{gameDev(game)} -- {gamePub(game)}")
+print(gameSupport(game))
+#print(f"{gameDev(game)} -- {gamePub(game)}")
 
 #TODO Random buygame roullete? for showcase
+
