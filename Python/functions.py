@@ -2,7 +2,9 @@ import traceback
 import requests
 import random
 
+
 from difflib import get_close_matches as gcm
+
 
 #TODO Check if you need __isSuccess in every method or not
 __API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
@@ -14,20 +16,16 @@ def __getJSON(api, appid = None):
      # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONETYPE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
      ## DEV NOTE ## Be careful of arguments/parameters placement. API is FIRST declared, and appid second. 
 
-
      try:
           if appid == None: return requests.get(api).json()
           else: return requests.get(f"{api}{appid}&cc={__WISHEDCURRENCY}").json()
 
-
-
      except Exception as e: 
 
                print('######################################################') #TODO CREATE BETTER EXCEPTION MENAGAMNET 
-               print(f"\n ERROR OF PRIVATE FUNCTION - getJSON. RETRUNED AS 'NONE' \n {e} ")
-               print('######################################################')
-               #print(e)
-               #traceback.format_exc() #TODO CREATE LOG FILE IF EXCEPTION RAISES 
+               print(f"\n ERROR OF PRIVATE FUNCTION - getJSON. RETRUNED AS : \n {traceback.format_exc()}. ABORT")
+               print('######################################################') #TODO CREATE LOG FILE IF EXCEPTION RAISES 
+
                return None                        
                
 
@@ -44,10 +42,9 @@ def __isSuccess(gameID):
      except Exception as e:
 
           print('######################################################')
-          print(f"ERROR OF PRIVATE FUNCTION - isSuccess. ERROR AS : ")
+          print(f"ERROR OF PRIVATE FUNCTION - isSuccess. ERROR AS : \n {traceback.format_exc()}. ABORT")
           print('######################################################')
-          traceback.format_exc()
-
+          
 
 def validateGame(game, returnappID = False, suggestions = False,): #Returns a boolean value
 
@@ -56,10 +53,9 @@ def validateGame(game, returnappID = False, suggestions = False,): #Returns a bo
 
      game = game.lower()
 
-     #print("Validatating " + game)
-
      try:
           appjs = __getJSON(__API1)
+
           if appjs is None: return 
 
           for item in appjs['applist']['apps']:
@@ -68,25 +64,19 @@ def validateGame(game, returnappID = False, suggestions = False,): #Returns a bo
 
                     appID = item['appid']
 
-                    #print(appID)
-
                     return appID if returnappID else __isSuccess(appID) # < If the game exists and steam do have any record of the game, this should return True.  >
 
                gamesuggestions.append(item['name'])
 
-          if not suggestions:
-               return False
+          if not suggestions: return False
 
           return gcm(game, gamesuggestions, 10, 0.6)
           
-     
      except Exception as e:
 
           print("######################################################")
-          print(f"ERROR OF PUBLIC FUNCTION validateGame! ERROR AS: ")
+          print(f"ERROR OF PUBLIC FUNCTION validateGame! ERROR AS: \n {traceback.format_exc()}")
           print("######################################################")
-          traceback.format_exc()
-          
           
           return None 
 
@@ -96,8 +86,7 @@ def gameDesc(appID, option = 'short'):
      try:
           gamejs = __getJSON(__API2, appID)
           
-          if not __isSuccess(appID): #WE NEED TO CHECK IF THE ENTRY IS CONSIDERED AS SUCCESSFULL IN STEAM API, IF NOT IT CAUSES ERROR
-               return None 
+          if not __isSuccess(appID): return None #WE NEED TO CHECK IF THE ENTRY IS CONSIDERED AS SUCCESSFULL IN STEAM API, IF NOT IT CAUSES ERROR
 
           if option == 'short': #TODO <IN PYTHON 3.10 YOU HAVE MATCH-CASE FUNCTION, HOWEVER IT'S NOT SUPPORTED WITH UBUNTU 20.04 (AS OF 16 MARCH 2022)> 
                
@@ -109,10 +98,9 @@ def gameDesc(appID, option = 'short'):
 
      except Exception as e:
 
-          print("###############################################")
-          print(f"ERROR OF PUBLIC FUNCTION gameDesc! ERROR AS: ")
-          print("###############################################")
-          traceback.format_exc()
+          print("################################################")
+          print(f"ERROR OF PUBLIC FUNCTION gameDesc! ERROR AS: \n {traceback.format_exc()}")
+          print("################################################")
 
           return None 
 
@@ -143,27 +131,31 @@ def isFree(gameID):
           return gamejs[str(gameID)]['data']['is_free'] if gamejs is not None else False
      
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - isFree. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
 def storePage(gameID):
 
-     try: return f"https://store.steampowered.com/app/{str(gameID)}/?cc={__WISHEDCURRENCY}"
+     try: 
+          return f"https://store.steampowered.com/app/{str(gameID)}/?cc={__WISHEDCURRENCY}"
      
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - storePage. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
 def gamePrice(appID):
 
      try: 
-
           if isFree(appID): return 'The game is free!'
 
           gamejs = __getJSON(__API2,appID)
@@ -173,16 +165,17 @@ def gamePrice(appID):
           return f"{price} {currency}"
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gamePrice. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
 def gameDiscount(gameID, checkifgameisondiscount = False):
 
      try:
-
           if isFree(gameID) and checkifgameisondiscount == True: return False, 'FREE'
           elif isFree(gameID) and checkifgameisondiscount == False: return 'No discount, the game is free to play!'
 
@@ -192,9 +185,11 @@ def gameDiscount(gameID, checkifgameisondiscount = False):
           return True if checkifgameisondiscount and discount > 0 else discount
 
      except Exception as e: 
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gameDiscount. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -210,7 +205,6 @@ def randomGame(nameorid = 'id'):
                random_appID = str(random_entry['appid']) 
                                         
                try:
-                    
                     if not __isSuccess(random_appID): continue
                     
                except : continue
@@ -224,18 +218,20 @@ def randomGame(nameorid = 'id'):
           if nameorid == 'name': return random_entry['name']
           elif nameorid == 'both': return random_entry['name'], random_appID
           else: return random_appID
-          
-                         
+                              
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - randomGame. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
 def randomFreeGame(nameorid = 'id'):
      # <This function may take some time to proccess>
      #TODO Create possibilty to generate a JSON file of all free games with an update function
+
      try:
           appjs = __getJSON(__API1)
           isgame = False
@@ -246,7 +242,6 @@ def randomFreeGame(nameorid = 'id'):
                random_appID = str(random_entry['appid'])
 
                try:
-
                     if not __isSuccess(random_appID): continue
 
                except: continue
@@ -263,14 +258,17 @@ def randomFreeGame(nameorid = 'id'):
           else: return random_appID
 
      except Exception as e: 
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - randomFreeGame. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
 def gameHeaderImage(gameID):
      # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
+     
      try: 
           if not __isSuccess(gameID) : return None
 
@@ -279,9 +277,11 @@ def gameHeaderImage(gameID):
           return gamejs[str(gameID)]['data']['header_image']
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gameHeaderImage. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -296,9 +296,11 @@ def gameDev(gameID):
           return ' , '.join(gamejs[str(gameID)]['data']['developers'])
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gameDev. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -313,9 +315,11 @@ def gamePub(gameID):
           return ' , '.join(gamejs[str(gameID)]['data']['publishers'])
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gamePub. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -334,9 +338,11 @@ def gameGenre(gameID, arrayasoutput = False):
           return genres if arrayasoutput is True else ' , '.join(genres)
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gameGenre. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -355,9 +361,11 @@ def gameCat(gameID, arrayisoutput = False):
           return cat if arrayisoutput is True else ' , '.join(cat)
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gameCat. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -375,18 +383,21 @@ def gamePlatform(gameID, dctasoutput = True):
                platforms[item] = gamejs[str(gameID)]['data']['platforms'][item]     
           
           if not dctasoutput:
+
                for item in platforms:
-                    if platforms[item] is True:
-                         onplatform.append(item)
-                    
+
+                    if platforms[item] is True: onplatform.append(item)
+                         
                return ' , '.join(onplatform)
 
           return platforms
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gamePlatform. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
 
 
@@ -399,17 +410,18 @@ def gameSupport(gameID):
           supportinfo = []
 
           for item in gamejs[str(gameID)]['data']['support_info']:
+
                supportinfo.append(gamejs[str(gameID)]['data']['support_info'][item])
 
           return supportinfo
 
      except Exception as e:
+
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gameSupport. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
+
                return None
-
-
 
 
 #game = 'scavengers'
