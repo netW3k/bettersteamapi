@@ -4,7 +4,7 @@ import random
 
 from difflib import get_close_matches as gcm
 
-
+#TODO Check if you need __isSuccess in every method or not
 __API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
 __API2 = 'https://store.steampowered.com/api/appdetails?appids='
 __WISHEDCURRENCY = 'nok'
@@ -68,7 +68,7 @@ def validateGame(game, returnappID = False, suggestions = False,): #Returns a bo
 
                     appID = item['appid']
 
-                    print(appID)
+                    #print(appID)
 
                     return appID if returnappID else __isSuccess(appID) # < If the game exists and steam do have any record of the game, this should return True.  >
 
@@ -183,13 +183,13 @@ def gameDiscount(gameID, checkifgameisondiscount = False):
 
      try:
 
-          if isFree(gameID) & checkifgameisondiscount == True: return False, 'FREE'
-          elif isFree(gameID) & checkifgameisondiscount == False: return 'No discount, the game is free to play!'
+          if isFree(gameID) and checkifgameisondiscount == True: return False, 'FREE'
+          elif isFree(gameID) and checkifgameisondiscount == False: return 'No discount, the game is free to play!'
 
           gamejs = __getJSON(__API2, gameID)
           discount = gamejs[str(gameID)]['data']['price_overview']['discount_percent']
-
-          return True if checkifgameisondiscount & discount > 0 else f"{discount}%" 
+          
+          return True if checkifgameisondiscount and discount > 0 else discount
 
      except Exception as e: 
                print('######################################################')
@@ -220,8 +220,11 @@ def randomGame(nameorid = 'id'):
                if gamejs[random_appID]['data']['type'] != 'game' : continue 
                
                isgame = True
-                    
-          return random_entry['name'] if nameorid == 'name' else random_appID
+          
+          if nameorid == 'name': return random_entry['name']
+          elif nameorid == 'both': return random_entry['name'], random_appID
+          else: return random_appID
+          
                          
      except Exception as e:
                print('######################################################')
@@ -231,7 +234,8 @@ def randomGame(nameorid = 'id'):
 
 
 def randomFreeGame(nameorid = 'id'):
-     # <This function may take some time to proccesss>
+     # <This function may take some time to proccess>
+     #TODO Create possibilty to generate a JSON file of all free games with an update function
      try:
           appjs = __getJSON(__API1)
           isgame = False
@@ -254,7 +258,9 @@ def randomFreeGame(nameorid = 'id'):
 
                isgame = True
           
-          return random_entry['name'] if nameorid == 'name' else random_appID
+          if nameorid == 'name': return random_entry['name']
+          elif nameorid == 'both': return random_entry['name'], random_appID
+          else: return random_appID
 
      except Exception as e: 
                print('######################################################')
@@ -415,9 +421,9 @@ def gameSupport(gameID):
 #print(gamePrice(testID))
 #print(gameDiscount(testID))
 
-game = randomGame('id')
-print(gameSupport(game))
+#game = randomGame('id')
+#print(gameSupport(game))
 #print(f"{gameDev(game)} -- {gamePub(game)}")
 
-#TODO Random buygame roullete? for showcase
+
 
