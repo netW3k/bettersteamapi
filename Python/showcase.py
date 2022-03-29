@@ -23,7 +23,8 @@ while usermode != exit:
           
           usermode = input('What would you like to do? ')
 
-          if usermode == gameinfo or usermode == randomgame or usermode == freerandomgame or usermode == exit: validInput = True # <Not ideal way of checking user input, however it serves its purpose>
+          if usermode == gameinfo or usermode == randomgame or usermode == freerandomgame or usermode == exit: 
+               validInput = True # <Not ideal way of checking user input, however it serves its purpose>
      
      if usermode == exit : break
 
@@ -40,8 +41,11 @@ while usermode != exit:
                     gameID = BAS.validateGame(gamename, True)
                     exists = True
 
-     elif usermode == randomgame : gamename, gameID = BAS.randomGame('both')
-     elif usermode == freerandomgame :  gamename, gameID = BAS.randomFreeGame('both')
+     elif usermode == randomgame : 
+          gamename, gameID = BAS.randomGame('both')
+
+     elif usermode == freerandomgame :       
+          gamename, gameID = BAS.randomFreeGame('both')
 
      discount = BAS.gameDiscount(gameID)
 
@@ -51,16 +55,15 @@ while usermode != exit:
      print(f"Developers: {BAS.gameDev(gameID)}")
      print(f"Publishers: {BAS.gamePub(gameID)}")
     
-
      if discount != 0 and isinstance(discount, int):
           print(f"\nPrice: {BAS.gamePrice(gameID)} with {discount}% discount")
-
-     else: print(f"\nPrice: {BAS.gamePrice(gameID)}")
+     else:
+          print(f"\nPrice: {BAS.gamePrice(gameID)}")
 
 
 #NOTE          
-# In recent Python release, 3,10 from 2021, there is a new function called "match-case" which is equivelent to "switch-case" 
+# In recent Python release, 3.10 from 2021, there is a new function called "match-case" which is equivelent to "switch-case" 
 # from C family, however it is not currently avaiable for Ubuntu 20+ which I'm currently using, 
-# and therfore the code is not optimized at it's fullest potential. 
-# This will change in the future update when I will have access to Python 3.10 (2021) 
+# and therfore the code is not optimized at its fullest potential. 
+# This will change in the future update when I will have access to Python 3.10.
     
