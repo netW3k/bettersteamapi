@@ -7,25 +7,23 @@ from difflib import get_close_matches as gcm
 
 
 #TODO global values namespace, __main__ function do reaserch and procceed accordingly
-_API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
-_API2 = 'https://store.steampowered.com/api/appdetails?appids='
 _WISHEDCURRENCY = 'nok'
 
 
-def __get_JSON(api, gameID = None):
-     """
-     This function requests steam API, converts it into a JSON and returns it
+def __get_JSON(gameID = None):
+     """ This function requests steam API, converts it into a JSON and returns it
      
-     :param api: Which API this function will request (_API1 OR _API2)
-     :param gameID: gamID of the game you want to access details about, DEF:NONE
-     :return: returns a JSON with 
+     :param gameID: gamID of the game you want to access details about, If empty this function will request API with all id's associated with a gamename DEF:None
+     :returns: JSON with all id's with gamenames existing in steam DB or JSON with details about a game (if gameID has a valid ID of the game) 
      """
-     
-     # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONETYPE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
+     # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
+
+     API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
+     API2 = 'https://store.steampowered.com/api/appdetails?appids='
 
      try:
-          if gameID == None: return requests.get(api).json()
-          else: return requests.get(f"{api}{gameID}&cc={_WISHEDCURRENCY}").json()
+          if gameID == None: return requests.get(API1).json()
+          else: return requests.get(f"{API2}{gameID}&cc={_WISHEDCURRENCY}").json()
 
      except Exception as e: 
 
@@ -37,10 +35,15 @@ def __get_JSON(api, gameID = None):
                
 
 def __is_success(id):
+     """
+     Returns whatever value is under JSON 'success' key, if None it returns False. Used to check if a game is recognized as successfull in steam DB.
+     This function is mainly used to check if a game is True under 'success', if not, it means that something is wrong, and therfore it is used as a 
+     prevention function (if returns False, evereything else will return False or None).  
+     """
      # <This is function is needed in order to prevent any 'None-transcipable' errors, and mainly to check if Steam database consider the enry as successfull>
      
      try:
-          game_JSON = __get_JSON(_API2, id)
+          game_JSON = __get_JSON(id)
 
           if game_JSON is None: return False
 
@@ -53,7 +56,15 @@ def __is_success(id):
           print('######################################################')
           
 
-def validate_game(game, return_gameID = False, suggestions = False,): #Returns a boolean value
+def validate_game(game, return_gameID = False, suggestions = False,):
+     """ Validates if provided game exists in steam DB.
+     
+     :param game: Name of the game to validate (string).
+     :param return_gameID: If this function should return ID of the game (if not found, return None) 
+     :param suggestions: If this function should return an array of similair words found in steam DB based on provided game 
+     :return: returns a boolean value based on if the game was found or not, if return_gameID is set to False, otherwise it will return gameID
+     """
+
 
      gameID = None
      game_suggestions = []
@@ -61,7 +72,7 @@ def validate_game(game, return_gameID = False, suggestions = False,): #Returns a
      game = game.lower()
 
      try:
-          id_JSON = __get_JSON(_API1)
+          id_JSON = __get_JSON()
 
           if id_JSON is None: return 
 
@@ -86,20 +97,14 @@ def validate_game(game, return_gameID = False, suggestions = False,): #Returns a
           return None 
 
 
-def game_description(gameID, option = 'short'):
+def game_description(gameID):
 
      try:
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
           
           if not __is_success(gameID): return None #WE NEED TO CHECK IF THE ENTRY IS CONSIDERED AS SUCCESSFULL IN STEAM API, IF NOT IT CAUSES ERROR
-
-          if option == 'short': #TODO <IN PYTHON 3.10 YOU HAVE MATCH-CASE FUNCTION, HOWEVER IT'S NOT SUPPORTED WITH UBUNTU 20.04 (AS OF 16 MARCH 2022)> 
                
-               description = game_JSON[str(gameID)]['data']['short_description']
-              
-               #long_desc = gamejs[str(appID)]['data']['detailed_description'] < RETURNED DATA IS WRITTEN IN SOME KIND OF MARKUP LANGUAGE AND IT'S IMPOSSIBLE AS OF NOW TO CLEAN THE OUTPUT, AND THERFORE IT'S COMMENTED OUT. MAYBE IT WILL BE IMPLEMENTED IN THE FUTURE RELEASE,BUT HIGHLY UNLIKELY>
-              
-               return description
+          return game_JSON[str(gameID)]['data']['short_description']
 
      except Exception as e:
 
@@ -110,12 +115,16 @@ def game_description(gameID, option = 'short'):
           return None 
 
 
-def release_date(gameID, comming_soon = False):
+def release_date(gameID, return_comming_soon = False):
+     """ Get the release date of the provided game.
+     
+     :param return_coming__soon: if True, it checks and returns if a game officialy released or is releasing soon on platform as bool.  
+     """
 
-     game_JSON = __get_JSON(_API2, gameID)
+     game_JSON = __get_JSON(gameID)
      
      try:
-          if comming_soon is True: return game_JSON[str(gameID)]['data']['release_date']['coming_soon'] 
+          if return_comming_soon is True: return game_JSON[str(gameID)]['data']['release_date']['coming_soon'] 
           
           return game_JSON[str(gameID)]['data']['release_date']['date'] 
 
@@ -129,8 +138,8 @@ def release_date(gameID, comming_soon = False):
 
 
 def is_free(gameID):
-
-     game_JSON = __get_JSON(_API2,gameID)
+     
+     game_JSON = __get_JSON(gameID)
 
      try: 
           return game_JSON[str(gameID)]['data']['is_free'] if game_JSON is not None else False
@@ -159,11 +168,14 @@ def store_page(gameID):
 
 
 def game_price(appID):
-
+     """ Get price of the game. (This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from)
+     
+     :returns: String with price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly. 
+     """
      try: 
           if is_free(appID): return 'The game is free!'
 
-          game_JSON = __get_JSON(_API2,appID)
+          game_JSON = __get_JSON(appID)
           currency = game_JSON[str(appID)]['data']['price_overview']['currency']
           price = game_JSON[str(appID)]['data']['price_overview']['final_formatted']
 
@@ -179,12 +191,16 @@ def game_price(appID):
 
 
 def game_discount(gameID, check_if_game_is_on_discount = False):
+     """ Get the discount of the game.
 
+     :check_if_game_is_on_discount: If set to True, this function will return True if the provided game is on discount.
+     :returns: Integer
+     """
      try:
           if is_free(gameID) and check_if_game_is_on_discount == True: return False, 'FREE'
           elif is_free(gameID) and check_if_game_is_on_discount == False: return 'No discount, the game is free to play!'
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
           discount = game_JSON[str(gameID)]['data']['price_overview']['discount_percent']
           
           return True if check_if_game_is_on_discount and discount > 0 else discount
@@ -199,9 +215,12 @@ def game_discount(gameID, check_if_game_is_on_discount = False):
 
 
 def random_game(name_or_id = 'id'):
-
+     """ Random game from steam applist, checks if it is a game and returns based on parameter.
+     
+     :param name_or_id: What should be returned 'id' (DEFAULT), 'name' or 'both'
+     """
      try:
-          id_JSON = __get_JSON(_API1)
+          id_JSON = __get_JSON()
           is_game = False
   
           while not is_game:
@@ -214,7 +233,7 @@ def random_game(name_or_id = 'id'):
                     
                except : continue
 
-               game_JSON = __get_JSON(_API2, random_appID)
+               game_JSON = __get_JSON(random_appID)
 
                if game_JSON[random_appID]['data']['type'] != 'game' : continue 
                
@@ -234,11 +253,16 @@ def random_game(name_or_id = 'id'):
 
 
 def random_free_game(name_or_id = 'id'):
+     """ Random free game from steam applist, checks if it is a game and returns based on parameter.
+     
+     :param name_or_id: What should be returned 'id' (DEFAULT), 'name' or 'both'
+     """
+
      # <This function may take some time to proccess>
      #TODO Create possibilty to generate a JSON file of all free games with an update function
 
      try:
-          id_JSON = __get_JSON(_API1)
+          id_JSON = __get_JSON()
           is_game = False
 
           while not is_game:
@@ -251,7 +275,7 @@ def random_free_game(name_or_id = 'id'):
 
                except: continue
 
-               game_JSON = __get_JSON(_API2, random_appID)
+               game_JSON = __get_JSON(random_appID)
                
                if not is_free(random_appID): continue
                if game_JSON[random_appID]['data']['type'] != 'game': continue
@@ -272,12 +296,16 @@ def random_free_game(name_or_id = 'id'):
 
 
 def game_header_image(gameID):
+     """ Get header image of the game.
+     :returns: Link as a string to the image.
+     
+     """
      # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
      
      try: 
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
 
           return game_JSON[str(gameID)]['data']['header_image']
 
@@ -291,12 +319,15 @@ def game_header_image(gameID):
 
 
 def game_developers(gameID):
-     # < Returns string as a connected elements of an array >
+     """ Get's a list of game developers, and returns it as a string.
+
+     :returns: Connected elemets from an array as a string 
+     """
 
      try:
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
 
           return ' , '.join(game_JSON[str(gameID)]['data']['developers'])
 
@@ -310,12 +341,15 @@ def game_developers(gameID):
 
 
 def game_publishers(gameID):
-     # <  Returns string as a connected elements of an array >
+     """ Get's a list of game publishers, and returns it as a string.
+
+     :returns: Connected elemets from an array as a string 
+     """
 
      try:
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
 
           return ' , '.join(game_JSON[str(gameID)]['data']['publishers'])
 
@@ -329,11 +363,16 @@ def game_publishers(gameID):
 
 
 def game_genres(gameID, return_array = False):
+     """ Get's a list of game generes.
+     :param return_array: If True, returns a raw array of game generes
+     :returns: returns elements from generes array as a string
+     
+     """
 
      try:
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
           genres = []
 
           for item in game_JSON[str(gameID)]['data']['genres']:
@@ -352,11 +391,16 @@ def game_genres(gameID, return_array = False):
 
 
 def game_categories(gameID, return_array = False):
+     """ Get's a list of game categories.
+     :param return_array: If True, returns a raw array of game categories
+     :returns: returns elements from categories array as a string
+     
+     """
 
      try:
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
           categories = []
 
           for item in game_JSON[str(gameID)]['data']['categories']:
@@ -375,11 +419,16 @@ def game_categories(gameID, return_array = False):
 
 
 def game_platforms(gameID, return_dictionary = True):
+     """ Get's a dictionary of platforms and returns all platforms the game is avaiable on.
+     :param return_dictionary: If set to True, returns a raw dictionary with all elements without checking which platform provided game is avaiable on
+     :returns: All platform names, the provided game is avaiable on as a string.
+     """
+
 
      try:
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID) 
+          game_JSON = __get_JSON(gameID) 
           platforms = {}
           game_on_platform = []
           
@@ -406,11 +455,13 @@ def game_platforms(gameID, return_dictionary = True):
 
 
 def game_support(gameID):
-
+     """ Get details about game support.
+     :returns: Connected elements as a string. 
+     """
      try:
           if not __is_success(gameID) : return None
 
-          game_JSON = __get_JSON(_API2, gameID)
+          game_JSON = __get_JSON(gameID)
           support_info = []
 
           for item in game_JSON[str(gameID)]['data']['support_info']:
