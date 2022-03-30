@@ -6,19 +6,26 @@ import random
 from difflib import get_close_matches as gcm
 
 
-#TODO Check if you need __isSuccess in every method or not
-__API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
-__API2 = 'https://store.steampowered.com/api/appdetails?appids='
-__WISHEDCURRENCY = 'nok'
+#TODO global values namespace, __main__ function do reaserch and procceed accordingly
+_API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
+_API2 = 'https://store.steampowered.com/api/appdetails?appids='
+_WISHEDCURRENCY = 'nok'
 
 
-def __getJSON(api, appid = None):
+def __get_JSON(api, gameID = None):
+     """
+     This function requests steam API, converts it into a JSON and returns it
+     
+     :param api: Which API this function will request (_API1 OR _API2)
+     :param gameID: gamID of the game you want to access details about, DEF:NONE
+     :return: returns a JSON with 
+     """
+     
      # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONETYPE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
-     ## DEV NOTE ## Be careful of arguments/parameters placement. API is FIRST declared, and appid second. 
 
      try:
-          if appid == None: return requests.get(api).json()
-          else: return requests.get(f"{api}{appid}&cc={__WISHEDCURRENCY}").json()
+          if gameID == None: return requests.get(api).json()
+          else: return requests.get(f"{api}{gameID}&cc={_WISHEDCURRENCY}").json()
 
      except Exception as e: 
 
@@ -29,15 +36,15 @@ def __getJSON(api, appid = None):
                return None                        
                
 
-def __isSuccess(gameID):
+def __is_success(id):
      # <This is function is needed in order to prevent any 'None-transcipable' errors, and mainly to check if Steam database consider the enry as successfull>
      
-     tempjs = __getJSON(__API2, gameID)
-
-     if tempjs is None: return False
-
      try:
-          return tempjs[str(gameID)]['success'] 
+          game_JSON = __get_JSON(_API2, id)
+
+          if game_JSON is None: return False
+
+          return game_JSON[str(id)]['success'] 
 
      except Exception as e:
 
@@ -46,31 +53,29 @@ def __isSuccess(gameID):
           print('######################################################')
           
 
-def validateGame(game, returnappID = False, suggestions = False,): #Returns a boolean value
+def validate_game(game, return_gameID = False, suggestions = False,): #Returns a boolean value
 
-     appID = None
-     gamesuggestions = []
+     gameID = None
+     game_suggestions = []
 
      game = game.lower()
 
      try:
-          appjs = __getJSON(__API1)
+          id_JSON = __get_JSON(_API1)
 
-          if appjs is None: return 
+          if id_JSON is None: return 
 
-          for item in appjs['applist']['apps']:
+          for item in id_JSON['applist']['apps']:
                
                if item['name'].lower() == game:
 
-                    appID = item['appid']
+                    gameID = item['appid']
 
-                    return appID if returnappID else __isSuccess(appID) # < If the game exists and steam do have any record of the game, this should return True.  >
+                    return gameID if return_gameID else __is_success(gameID) # <If the game exists and steam do have any record of the game, this should return True.>
 
-               gamesuggestions.append(item['name'])
+               game_suggestions.append(item['name'])
 
-          if not suggestions: return False
-
-          return gcm(game, gamesuggestions, 10, 0.6)
+          return gcm(game, game_suggestions, 10, 0.6) if suggestions is True else False # <Returns array of words that are similair to user input based on entries in id_JSON, if suggestions are set to true>
           
      except Exception as e:
 
@@ -81,20 +86,20 @@ def validateGame(game, returnappID = False, suggestions = False,): #Returns a bo
           return None 
 
 
-def gameDesc(appID, option = 'short'):
+def game_description(gameID, option = 'short'):
 
      try:
-          gamejs = __getJSON(__API2, appID)
+          game_JSON = __get_JSON(_API2, gameID)
           
-          if not __isSuccess(appID): return None #WE NEED TO CHECK IF THE ENTRY IS CONSIDERED AS SUCCESSFULL IN STEAM API, IF NOT IT CAUSES ERROR
+          if not __is_success(gameID): return None #WE NEED TO CHECK IF THE ENTRY IS CONSIDERED AS SUCCESSFULL IN STEAM API, IF NOT IT CAUSES ERROR
 
           if option == 'short': #TODO <IN PYTHON 3.10 YOU HAVE MATCH-CASE FUNCTION, HOWEVER IT'S NOT SUPPORTED WITH UBUNTU 20.04 (AS OF 16 MARCH 2022)> 
                
-               desc = gamejs[str(appID)]['data']['short_description']
+               description = game_JSON[str(gameID)]['data']['short_description']
               
                #long_desc = gamejs[str(appID)]['data']['detailed_description'] < RETURNED DATA IS WRITTEN IN SOME KIND OF MARKUP LANGUAGE AND IT'S IMPOSSIBLE AS OF NOW TO CLEAN THE OUTPUT, AND THERFORE IT'S COMMENTED OUT. MAYBE IT WILL BE IMPLEMENTED IN THE FUTURE RELEASE,BUT HIGHLY UNLIKELY>
               
-               return desc
+               return description
 
      except Exception as e:
 
@@ -105,14 +110,14 @@ def gameDesc(appID, option = 'short'):
           return None 
 
 
-def releaseDate(gameID, csoon = False):
+def release_date(gameID, comming_soon = False):
 
-     gamejs = __getJSON(__API2, gameID)
+     game_JSON = __get_JSON(_API2, gameID)
      
      try:
-          if csoon: return gamejs[str(gameID)]['data']['release_date']['coming_soon'] 
+          if comming_soon is True: return game_JSON[str(gameID)]['data']['release_date']['coming_soon'] 
           
-          return gamejs[str(gameID)]['data']['release_date']['date'] 
+          return game_JSON[str(gameID)]['data']['release_date']['date'] 
 
      except Exception as e:
 
@@ -123,12 +128,12 @@ def releaseDate(gameID, csoon = False):
                return None 
 
 
-def isFree(gameID):
+def is_free(gameID):
 
-     gamejs = __getJSON(__API2,gameID)
+     game_JSON = __get_JSON(_API2,gameID)
 
      try: 
-          return gamejs[str(gameID)]['data']['is_free'] if gamejs is not None else False
+          return game_JSON[str(gameID)]['data']['is_free'] if game_JSON is not None else False
      
      except Exception as e:
 
@@ -139,10 +144,10 @@ def isFree(gameID):
                return None
 
 
-def storePage(gameID):
+def store_page(gameID):
 
      try: 
-          return f"https://store.steampowered.com/app/{str(gameID)}/?cc={__WISHEDCURRENCY}"
+          return f"https://store.steampowered.com/app/{str(gameID)}/?cc={_WISHEDCURRENCY}"
      
      except Exception as e:
 
@@ -153,14 +158,14 @@ def storePage(gameID):
                return None
 
 
-def gamePrice(appID):
+def game_price(appID):
 
      try: 
-          if isFree(appID): return 'The game is free!'
+          if is_free(appID): return 'The game is free!'
 
-          gamejs = __getJSON(__API2,appID)
-          currency = gamejs[str(appID)]['data']['price_overview']['currency']
-          price = gamejs[str(appID)]['data']['price_overview']['final_formatted']
+          game_JSON = __get_JSON(_API2,appID)
+          currency = game_JSON[str(appID)]['data']['price_overview']['currency']
+          price = game_JSON[str(appID)]['data']['price_overview']['final_formatted']
 
           return f"{price} {currency}"
 
@@ -173,16 +178,16 @@ def gamePrice(appID):
                return None
 
 
-def gameDiscount(gameID, checkifgameisondiscount = False):
+def game_discount(gameID, check_if_game_is_on_discount = False):
 
      try:
-          if isFree(gameID) and checkifgameisondiscount == True: return False, 'FREE'
-          elif isFree(gameID) and checkifgameisondiscount == False: return 'No discount, the game is free to play!'
+          if is_free(gameID) and check_if_game_is_on_discount == True: return False, 'FREE'
+          elif is_free(gameID) and check_if_game_is_on_discount == False: return 'No discount, the game is free to play!'
 
-          gamejs = __getJSON(__API2, gameID)
-          discount = gamejs[str(gameID)]['data']['price_overview']['discount_percent']
+          game_JSON = __get_JSON(_API2, gameID)
+          discount = game_JSON[str(gameID)]['data']['price_overview']['discount_percent']
           
-          return True if checkifgameisondiscount and discount > 0 else discount
+          return True if check_if_game_is_on_discount and discount > 0 else discount
 
      except Exception as e: 
 
@@ -193,30 +198,30 @@ def gameDiscount(gameID, checkifgameisondiscount = False):
                return None
 
 
-def randomGame(nameorid = 'id'):
+def random_game(name_or_id = 'id'):
 
      try:
-          appjs = __getJSON(__API1)
-          isgame = False
+          id_JSON = __get_JSON(_API1)
+          is_game = False
   
-          while not isgame:
+          while not is_game:
                     
-               random_entry = random.choice(appjs['applist']['apps'])
+               random_entry = random.choice(id_JSON['applist']['apps'])
                random_appID = str(random_entry['appid']) 
                                         
                try:
-                    if not __isSuccess(random_appID): continue
+                    if not __is_success(random_appID): continue
                     
                except : continue
 
-               gamejs = __getJSON(__API2, random_appID)
+               game_JSON = __get_JSON(_API2, random_appID)
 
-               if gamejs[random_appID]['data']['type'] != 'game' : continue 
+               if game_JSON[random_appID]['data']['type'] != 'game' : continue 
                
-               isgame = True
+               is_game = True
           
-          if nameorid == 'name': return random_entry['name']
-          elif nameorid == 'both': return random_entry['name'], random_appID
+          if name_or_id == 'name': return random_entry['name']
+          elif name_or_id == 'both': return random_entry['name'], random_appID
           else: return random_appID
                               
      except Exception as e:
@@ -228,33 +233,33 @@ def randomGame(nameorid = 'id'):
                return None
 
 
-def randomFreeGame(nameorid = 'id'):
+def random_free_game(name_or_id = 'id'):
      # <This function may take some time to proccess>
      #TODO Create possibilty to generate a JSON file of all free games with an update function
 
      try:
-          appjs = __getJSON(__API1)
-          isgame = False
+          id_JSON = __get_JSON(_API1)
+          is_game = False
 
-          while not isgame:
+          while not is_game:
 
-               random_entry = random.choice(appjs['applist']['apps'])
+               random_entry = random.choice(id_JSON['applist']['apps'])
                random_appID = str(random_entry['appid'])
 
                try:
-                    if not __isSuccess(random_appID): continue
+                    if not __is_success(random_appID): continue
 
                except: continue
 
-               gamejs = __getJSON(__API2, random_appID)
+               game_JSON = __get_JSON(_API2, random_appID)
                
-               if not isFree(random_appID): continue
-               if gamejs[random_appID]['data']['type'] != 'game': continue
+               if not is_free(random_appID): continue
+               if game_JSON[random_appID]['data']['type'] != 'game': continue
 
-               isgame = True
+               is_game = True
           
-          if nameorid == 'name': return random_entry['name']
-          elif nameorid == 'both': return random_entry['name'], random_appID
+          if name_or_id == 'name': return random_entry['name']
+          elif name_or_id == 'both': return random_entry['name'], random_appID
           else: return random_appID
 
      except Exception as e: 
@@ -266,15 +271,15 @@ def randomFreeGame(nameorid = 'id'):
                return None
 
 
-def gameHeaderImage(gameID):
+def game_header_image(gameID):
      # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
      
      try: 
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID)
+          game_JSON = __get_JSON(_API2, gameID)
 
-          return gamejs[str(gameID)]['data']['header_image']
+          return game_JSON[str(gameID)]['data']['header_image']
 
      except Exception as e:
 
@@ -285,15 +290,15 @@ def gameHeaderImage(gameID):
                return None
 
 
-def gameDev(gameID):
+def game_developers(gameID):
      # < Returns string as a connected elements of an array >
 
      try:
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID)
+          game_JSON = __get_JSON(_API2, gameID)
 
-          return ' , '.join(gamejs[str(gameID)]['data']['developers'])
+          return ' , '.join(game_JSON[str(gameID)]['data']['developers'])
 
      except Exception as e:
 
@@ -304,15 +309,15 @@ def gameDev(gameID):
                return None
 
 
-def gamePub(gameID):
+def game_publishers(gameID):
      # <  Returns string as a connected elements of an array >
 
      try:
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID)
+          game_JSON = __get_JSON(_API2, gameID)
 
-          return ' , '.join(gamejs[str(gameID)]['data']['publishers'])
+          return ' , '.join(game_JSON[str(gameID)]['data']['publishers'])
 
      except Exception as e:
 
@@ -323,19 +328,19 @@ def gamePub(gameID):
                return None
 
 
-def gameGenre(gameID, arrayasoutput = False):
+def game_genres(gameID, return_array = False):
 
      try:
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID)
+          game_JSON = __get_JSON(_API2, gameID)
           genres = []
 
-          for item in gamejs[str(gameID)]['data']['genres']:
+          for item in game_JSON[str(gameID)]['data']['genres']:
           
                genres.append(item['description'])
 
-          return genres if arrayasoutput is True else ' , '.join(genres)
+          return genres if return_array is True else ' , '.join(genres)
 
      except Exception as e:
 
@@ -346,19 +351,19 @@ def gameGenre(gameID, arrayasoutput = False):
                return None
 
 
-def gameCat(gameID, arrayisoutput = False):
+def game_categories(gameID, return_array = False):
 
      try:
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID)
-          cat = []
+          game_JSON = __get_JSON(_API2, gameID)
+          categories = []
 
-          for item in gamejs[str(gameID)]['data']['categories']:
+          for item in game_JSON[str(gameID)]['data']['categories']:
 
-               cat.append(item['description'])
+               categories.append(item['description'])
 
-          return cat if arrayisoutput is True else ' , '.join(cat)
+          return categories if return_array is True else ' , '.join(categories)
 
      except Exception as e:
 
@@ -369,28 +374,27 @@ def gameCat(gameID, arrayisoutput = False):
                return None
 
 
-def gamePlatform(gameID, dctasoutput = True):
+def game_platforms(gameID, return_dictionary = True):
 
      try:
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID) 
+          game_JSON = __get_JSON(_API2, gameID) 
           platforms = {}
-          onplatform = []
+          game_on_platform = []
           
-          for item in gamejs[str(gameID)]['data']['platforms']:
+          for item in game_JSON[str(gameID)]['data']['platforms']:
           
-               platforms[item] = gamejs[str(gameID)]['data']['platforms'][item]     
+               platforms[item] = game_JSON[str(gameID)]['data']['platforms'][item]     
           
-          if not dctasoutput:
+          if return_dictionary is True: return platforms
 
-               for item in platforms:
+          for item in platforms:
 
-                    if platforms[item] is True: onplatform.append(item)
+               if platforms[item] is True: game_on_platform.append(item)
                          
-               return ' , '.join(onplatform)
+          return ' , '.join(game_on_platform)
 
-          return platforms
 
      except Exception as e:
 
@@ -401,19 +405,19 @@ def gamePlatform(gameID, dctasoutput = True):
                return None
 
 
-def gameSupport(gameID):
+def game_support(gameID):
 
      try:
-          if not __isSuccess(gameID) : return None
+          if not __is_success(gameID) : return None
 
-          gamejs = __getJSON(__API2, gameID)
-          supportinfo = []
+          game_JSON = __get_JSON(_API2, gameID)
+          support_info = []
 
-          for item in gamejs[str(gameID)]['data']['support_info']:
+          for item in game_JSON[str(gameID)]['data']['support_info']:
 
-               supportinfo.append(gamejs[str(gameID)]['data']['support_info'][item])
+               support_info.append(game_JSON[str(gameID)]['data']['support_info'][item])
 
-          return supportinfo
+          return support_info
 
      except Exception as e:
 

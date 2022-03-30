@@ -1,13 +1,14 @@
 import functions as BAS
 
 usermode = ''
-gameinfo = '1'
-randomgame = '2'
-freerandomgame = '3'
-exit = '4'
+
+GAME_INFO = '1'
+RANDOM_GAME = '2'
+FREE_RANDOM_GAME = '3'
+EXIT = '4'
 
 
-while usermode != exit:
+while usermode != EXIT:
 
      validInput = False
 
@@ -23,12 +24,12 @@ while usermode != exit:
           
           usermode = input('What would you like to do? ')
 
-          if usermode == gameinfo or usermode == randomgame or usermode == freerandomgame or usermode == exit: 
+          if usermode == GAME_INFO or usermode == RANDOM_GAME or usermode == FREE_RANDOM_GAME or usermode == EXIT: 
                validInput = True # <Not ideal way of checking user input, however it serves its purpose>
      
-     if usermode == exit : break
+     if usermode == EXIT : break
 
-     if usermode == gameinfo : 
+     if usermode == GAME_INFO : 
           
           exists = False
           
@@ -36,29 +37,29 @@ while usermode != exit:
                
                gamename = input('What is the name of the game? ')
                
-               if BAS.validateGame(gamename) is True:
+               if BAS.validate_game(gamename) is True:
                    
-                    gameID = BAS.validateGame(gamename, True)
+                    gameID = BAS.validate_game(gamename, True)
                     exists = True
 
-     elif usermode == randomgame : 
-          gamename, gameID = BAS.randomGame('both')
+     elif usermode == RANDOM_GAME : 
+          gamename, gameID = BAS.random_game('both')
 
-     elif usermode == freerandomgame :       
-          gamename, gameID = BAS.randomFreeGame('both')
+     elif usermode == FREE_RANDOM_GAME :       
+          gamename, gameID = BAS.random_free_game('both')
 
-     discount = BAS.gameDiscount(gameID)
+     discount = BAS.game_discount(gameID)
 
      print(f"\n--- {gamename.upper()} ---\n")
-     print(BAS.gameDesc(gameID))
+     print(BAS.game_description(gameID))
      print('\n')
-     print(f"Developers: {BAS.gameDev(gameID)}")
-     print(f"Publishers: {BAS.gamePub(gameID)}")
+     print(f"Developers: {BAS.game_developers(gameID)}")
+     print(f"Publishers: {BAS.game_publishers(gameID)}")
     
      if discount != 0 and isinstance(discount, int):
-          print(f"\nPrice: {BAS.gamePrice(gameID)} with {discount}% discount")
+          print(f"\nPrice: {BAS.game_price(gameID)} with {discount}% discount")
      else:
-          print(f"\nPrice: {BAS.gamePrice(gameID)}")
+          print(f"\nPrice: {BAS.game_price(gameID)}")
 
 
 #NOTE          
