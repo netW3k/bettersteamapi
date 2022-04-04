@@ -1,0 +1,4 @@
+If you add non-supported or you have a typo in wished_currency key value, steam will consider it as a default. 
+Meaning if you type "wished_currency" : "usd" instead of "wished_currency" : "us", price will be shown 
+in the currency from the country you are living in (or from your IP adress country if using VPN) instead of getting price 
+in USD ($)
