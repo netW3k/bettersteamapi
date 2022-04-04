@@ -22,7 +22,7 @@ def __get_JSON(gameID = None):
      API2 = 'https://store.steampowered.com/api/appdetails?appids='
 
      try:
-          if gameID == None: return requests.get(API1).json()
+          if gameID is None: return requests.get(API1).json()
           else: return requests.get(f"{API2}{gameID}&cc={_WISHEDCURRENCY}").json()
 
      except Exception as e: 
@@ -73,19 +73,21 @@ def validate_game(game, return_gameID = False, suggestions = False,):
 
      try:
           id_JSON = __get_JSON()
-
-          if id_JSON is None: return 
-
+          
+          if id_JSON is None: return None
+          
           for item in id_JSON['applist']['apps']:
                
                if item['name'].lower() == game:
-
+                    print("Found")
                     gameID = item['appid']
 
-                    return gameID if return_gameID else __is_success(gameID) # <If the game exists and steam do have any record of the game, this should return True.>
+                    if not __is_success(gameID) : return None 
+                    return gameID if return_gameID else True # <If the game exists and steam do have any record of the game, this should return True.>
 
                game_suggestions.append(item['name'])
 
+          print("skip")
           return gcm(game, game_suggestions, 10, 0.6) if suggestions is True else False # <Returns array of words that are similair to user input based on entries in id_JSON, if suggestions are set to true>
           
      except Exception as e:
@@ -176,18 +178,19 @@ def game_price(appID):
           if is_free(appID): return 'The game is free!'
 
           game_JSON = __get_JSON(appID)
+          
           currency = game_JSON[str(appID)]['data']['price_overview']['currency']
           price = game_JSON[str(appID)]['data']['price_overview']['final_formatted']
 
           return f"{price} {currency}"
 
      except Exception as e:
+               return None
 
                print('######################################################')
                print(f"ERROR OF PUBLIC FUNCTION - gamePrice. ERROR AS : \n {traceback.format_exc()}")
                print('######################################################')
 
-               return None
 
 
 def game_discount(gameID, check_if_game_is_on_discount = False):

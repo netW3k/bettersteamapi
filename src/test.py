@@ -32,15 +32,22 @@ while usermode != EXIT:
      if usermode == GAME_INFO : 
           
           exists = False
-          
-          while not exists:
-               
+          iteration = 0
+          while exists is False:
+
+               iteration += 1
+
+               if iteration != 1: print(BAS.validate_game(gamename, suggestions = True))
+               gamename = ''
                gamename = input('What is the name of the game? ')
                
-               if BAS.validate_game(gamename) is True:
+               #print(f"Try: {gamename}")
+               #print(BAS.validate_game(gamename))
+
+               if BAS.validate_game(gamename) is False: continue
                    
-                    gameID = BAS.validate_game(gamename, True)
-                    exists = True
+               gameID = BAS.validate_game(gamename, True)
+               exists = True
 
      elif usermode == RANDOM_GAME : 
           gamename, gameID = BAS.random_game('both')
@@ -51,11 +58,14 @@ while usermode != EXIT:
      discount = BAS.game_discount(gameID)
 
      print(f"\n--- {gamename.upper()} ---\n")
+     print(gameID)
      print(BAS.game_description(gameID))
      print('\n')
      print(f"Developers: {BAS.game_developers(gameID)}")
      print(f"Publishers: {BAS.game_publishers(gameID)}")
-    
+     print(f"\nNeed help? Check out this ==> {' , '.join(BAS.game_support(gameID))}")
+     print(f"Comming soon? {BAS.release_date(gameID, return_comming_soon = True)}, When? {BAS.release_date(gameID)}")
+
      if discount != 0 and isinstance(discount, int):
           print(f"\nPrice: {BAS.game_price(gameID)} with {discount}% discount")
      else:
