@@ -37,7 +37,7 @@ while usermode != EXIT:
 
                iteration += 1
 
-               if iteration != 1: print(BAS.validate_game(gamename, suggestions = True))
+               if iteration != 1: print(BAS.game_suggestions(gamename))
                gamename = ''
                gamename = input('What is the name of the game? ')
                
@@ -46,30 +46,31 @@ while usermode != EXIT:
 
                if BAS.validate_game(gamename) is False: continue
                    
-               gameID = BAS.validate_game(gamename, True)
+               gameid = BAS.validate_game(gamename, True)
                exists = True
 
      elif usermode == RANDOM_GAME : 
-          gamename, gameID = BAS.random_game('both')
+          gamename, gameid = BAS.get_random_game('both')
 
      elif usermode == FREE_RANDOM_GAME :       
-          gamename, gameID = BAS.random_free_game('both')
+          gamename, gameid = BAS.random_free_game('both')
 
-     discount = BAS.game_discount(gameID)
+     discount = BAS.get_game_discount(gameid)
 
      print(f"\n--- {gamename.upper()} ---\n")
-     print(gameID)
-     print(BAS.game_description(gameID))
+     print(gameid)
+     print(BAS.get_game_description(gameid))
      print('\n')
-     print(f"Developers: {BAS.game_developers(gameID)}")
-     print(f"Publishers: {BAS.game_publishers(gameID)}")
-     print(f"\nNeed help? Check out this ==> {' , '.join(BAS.game_support(gameID))}")
-     print(f"Comming soon? {BAS.release_date(gameID, return_comming_soon = True)}, When? {BAS.release_date(gameID)}")
+     print(f"Check it out --> {BAS.get_store_page(gameid)}")
+     print(f"\nDevelopers: {BAS.game_developers(gameid)}")
+     print(f"Publishers: {BAS.game_publishers(gameid)}")
+     print(f"\nNeed help? Check out this ==> {' , '.join(BAS.game_support(gameid))}")
+     print(f"Comming soon? {BAS.get_release_date(gameid, return_comming_soon = True)}, When? {BAS.get_release_date(gameid)}")
 
      if discount != 0 and isinstance(discount, int):
-          print(f"\nPrice: {BAS.game_price(gameID)} with {discount}% discount")
+          print(f"\nPrice: {BAS.get_game_price(gameid)} with {discount}% discount")
      else:
-          print(f"\nPrice: {BAS.game_price(gameID)}")
+          print(f"\nPrice: {BAS.get_game_price(gameid)}")
 
 
 #NOTE          

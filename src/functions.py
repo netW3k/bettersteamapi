@@ -1,499 +1,398 @@
-import traceback
-import requests
+import json
 import random
-
-
+import traceback
 from difflib import get_close_matches as gcm
 
-
-#TODO global values namespace, __main__ function do reaserch and procceed accordingly
-_WISHEDCURRENCY = 'nok'
+import requests
 
 
-def __get_JSON(gameID = None):
-     """ This function requests steam API, converts it into a JSON and returns it
-     
-     :param gameID: gamID of the game you want to access details about, If empty this function will request API with all id's associated with a gamename DEF:None
-     :returns: JSON with all id's with gamenames existing in steam DB or JSON with details about a game (if gameID has a valid ID of the game) 
-     """
-     # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
+def __get_json(gameid: str = 'None') -> dict:
+    """This function requests steam API, converts it into a JSON and returns it
 
-     API1 = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json'
-     API2 = 'https://store.steampowered.com/api/appdetails?appids='
+    :param gameid: If empty this function will request API with all id's associated with a gamename
+    :returns: JSON with all id's with gamenames existing in steam DB or JSON with details about a game (if gameID has a valid ID of the game)
+    """
+    # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
 
-     try:
-          if gameID is None: return requests.get(API1).json()
-          else: return requests.get(f"{API2}{gameID}&cc={_WISHEDCURRENCY}").json()
+    API1 = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json"
+    API2 = "https://store.steampowered.com/api/appdetails?appids="
 
-     except Exception as e: 
+    configjson = json.load(open(file="./config.json", encoding="utf-8"))
 
-               print('######################################################') #TODO CREATE BETTER EXCEPTION MENAGAMNET 
-               print(f"\n ERROR OF PRIVATE FUNCTION - getJSON. RETRUNED AS : \n {traceback.format_exc()}. ABORT")
-               print('######################################################') #TODO CREATE LOG FILE IF EXCEPTION RAISES 
+    if gameid == 'None': return requests.get(API1).json()
 
-               return None                        
-               
+    return requests.get(f"{API2}{gameid}&cc={configjson['wished_country_currency']}").json()
 
-def __is_success(id):
-     """
-     Returns whatever value is under JSON 'success' key, if None it returns False. Used to check if a game is recognized as successfull in steam DB.
-     This function is mainly used to check if a game is True under 'success', if not, it means that something is wrong, and therfore it is used as a 
-     prevention function (if returns False, evereything else will return False or None).  
-     """
-     # <This is function is needed in order to prevent any 'None-transcipable' errors, and mainly to check if Steam database consider the enry as successfull>
-     
-     try:
-          game_JSON = __get_JSON(id)
 
-          if game_JSON is None: return False
+def __is_success(id: str) -> bool:
+    """
+    Returns whatever value is under JSON 'success' key, if None it returns False. Used to check if a game is recognized as successfull in steam DB.
+    This function is mainly used to check if a game is True under 'success', if not, it means that something is wrong, and therfore it is used as a
+    prevention function (if returns False, evereything else will return False or None).
+    """
+    # <This is function is needed in order to prevent any 'None-transcipable' errors, and mainly to check if Steam database consider the enry as successfull>
 
-          return game_JSON[str(id)]['success'] 
+    game_json = __get_json(id)
 
-     except Exception as e:
+    return game_json[id]["success"]
 
-          print('######################################################')
-          print(f"ERROR OF PRIVATE FUNCTION - isSuccess. ERROR AS : \n {traceback.format_exc()}. ABORT")
-          print('######################################################')
-          
 
-def validate_game(game, return_gameID = False, suggestions = False,):
-     """ Validates if provided game exists in steam DB.
-     
-     :param game: Name of the game to validate (string).
-     :param return_gameID: If this function should return ID of the game (if not found, return None) 
-     :param suggestions: If this function should return an array of similair words found in steam DB based on provided game 
+def validate_game(game: str, return_gameid: bool = False) -> bool:
+     """Validates if provided game exists in steam DB.
+
+     :param game: Name of the game to validate.
+     :param return_gameid: If this function should return ID of the game (if not found, return None)
      :return: returns a boolean value based on if the game was found or not, if return_gameID is set to False, otherwise it will return gameID
      """
+     
+     game = game.lower()
+     idjson = __get_json()
 
+     for item in idjson["applist"]["apps"]:
+        if item["name"].lower() == game:
+            gameid = item["appid"]
+            return (gameid if return_gameid else True)  # <If the game exists and steam do have any record of the game, this should return True.>
 
-     gameID = None
-     game_suggestions = []
+     return False
+
+def game_suggestions(game: str) -> list[str]:
+     """ Returns suggestions based on game value.
+     :param game: name of the game you want to get suggestions 
+     :returns: list of strings that are similair to game value
+     """
 
      game = game.lower()
+     idjson = __get_json()
+     gamelist = [item["name"] for item in idjson["applist"]["apps"]]
 
-     try:
-          id_JSON = __get_JSON()
-          
-          if id_JSON is None: return None
-          
-          for item in id_JSON['applist']['apps']:
-               
-               if item['name'].lower() == game:
-                    print("Found")
-                    gameID = item['appid']
-
-                    if not __is_success(gameID) : return None 
-                    return gameID if return_gameID else True # <If the game exists and steam do have any record of the game, this should return True.>
-
-               game_suggestions.append(item['name'])
-
-          print("skip")
-          return gcm(game, game_suggestions, 10, 0.6) if suggestions is True else False # <Returns array of words that are similair to user input based on entries in id_JSON, if suggestions are set to true>
-          
-     except Exception as e:
-
-          print("######################################################")
-          print(f"ERROR OF PUBLIC FUNCTION validateGame! ERROR AS: \n {traceback.format_exc()}")
-          print("######################################################")
-          
-          return None 
+     return gcm(word=game, possibilities=gamelist)
 
 
-def game_description(gameID):
-
-     try:
-          game_JSON = __get_JSON(gameID)
-          
-          if not __is_success(gameID): return None #WE NEED TO CHECK IF THE ENTRY IS CONSIDERED AS SUCCESSFULL IN STEAM API, IF NOT IT CAUSES ERROR
-               
-          return game_JSON[str(gameID)]['data']['short_description']
-
-     except Exception as e:
-
-          print("################################################")
-          print(f"ERROR OF PUBLIC FUNCTION gameDesc! ERROR AS: \n {traceback.format_exc()}")
-          print("################################################")
-
-          return None 
+def get_game_description(gameid: str) -> str:
+     gamejson = __get_json(gameid)
+     return gamejson[gameid]["data"]["short_description"]
 
 
-def release_date(gameID, return_comming_soon = False):
-     """ Get the release date of the provided game.
-     
-     :param return_coming__soon: if True, it checks and returns if a game officialy released or is releasing soon on platform as bool.  
+def get_release_date(gameid: str, return_comming_soon: bool = False) -> str:
+     """Get the release date of the provided game.
+
+     :param return_coming__soon: if True, it checks and returns if a game officialy released or is releasing soon on platform as bool.
      """
 
-     game_JSON = __get_JSON(gameID)
-     
-     try:
-          if return_comming_soon is True: return game_JSON[str(gameID)]['data']['release_date']['coming_soon'] 
-          
-          return game_JSON[str(gameID)]['data']['release_date']['date'] 
+     gamejson = __get_json(gameid)
+     coming_soon = gamejson[str(gameid)]["data"]["release_date"]["coming_soon"]
 
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - releaseDate. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None 
+     if return_comming_soon is True: return coming_soon
+     return gamejson[str(gameid)]["data"]["release_date"]["date"]
 
 
-def is_free(gameID):
-     
-     game_JSON = __get_JSON(gameID)
-
-     try: 
-          return game_JSON[str(gameID)]['data']['is_free'] if game_JSON is not None else False
-     
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - isFree. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def store_page(gameID):
-
-     try: 
-          return f"https://store.steampowered.com/app/{str(gameID)}/?cc={_WISHEDCURRENCY}"
-     
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - storePage. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def game_price(appID):
-     """ Get price of the game. (This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from)
-     
-     :returns: String with price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly. 
+def check_if_free(gameid: str) -> bool:
+     """ Checks if a game is free.
      """
-     try: 
-          if is_free(appID): return 'The game is free!'
 
-          game_JSON = __get_JSON(appID)
-          
-          currency = game_JSON[str(appID)]['data']['price_overview']['currency']
-          price = game_JSON[str(appID)]['data']['price_overview']['final_formatted']
-
-          return f"{price} {currency}"
-
-     except Exception as e:
-               return None
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gamePrice. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
+     game_json = __get_json(gameid)
+     return (game_json[str(gameid)]["data"]["is_free"] if game_json is not None else False)
 
 
+def get_store_page(gameid: int) -> str:
+     configjson = json.load(open(file="./config.json", encoding="utf-8"))
+     return f"https://store.steampowered.com/app/{str(gameid)}/?cc={configjson['wished_country_currency']}"
 
-def game_discount(gameID, check_if_game_is_on_discount = False):
-     """ Get the discount of the game.
+
+def get_game_price(appid: str) -> str:
+     """Get price of the game. (This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from)
+
+     :returns: String with price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly.
+     """
+    
+     if check_if_free(appid): return "The game is free!"
+
+     gamejson = __get_json(appid)
+     currency = gamejson[str(appid)]["data"]["price_overview"]["currency"]
+     price = gamejson[str(appid)]["data"]["price_overview"]["final_formatted"]
+
+     return f"{price} {currency}"
+
+
+def get_game_discount(gameid: str, check_if_game_is_on_discount: bool = False):
+     """Get the discount of the game.
 
      :check_if_game_is_on_discount: If set to True, this function will return True if the provided game is on discount.
      :returns: Integer
      """
-     try:
-          if is_free(gameID) and check_if_game_is_on_discount == True: return False, 'FREE'
-          elif is_free(gameID) and check_if_game_is_on_discount == False: return 'No discount, the game is free to play!'
-
-          game_JSON = __get_JSON(gameID)
-          discount = game_JSON[str(gameID)]['data']['price_overview']['discount_percent']
-          
-          return True if check_if_game_is_on_discount and discount > 0 else discount
-
-     except Exception as e: 
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gameDiscount. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def random_game(name_or_id = 'id'):
-     """ Random game from steam applist, checks if it is a game and returns based on parameter.
+    
+     if check_if_free(gameid) and check_if_game_is_on_discount == True: return False, "FREE"
+     elif check_if_free(gameid) and check_if_game_is_on_discount == False: return "No discount, the game is free to play!"
      
+     gamejson = __get_json(gameid)
+     discount = gamejson[str(gameid)]["data"]["price_overview"]["discount_percent"]
+
+     return True if check_if_game_is_on_discount and discount > 0 else discount
+
+
+def get_random_game() -> dict:
+     """Random game from steam applist, checks if it is a game and returns based on parameter.
+
      :param name_or_id: What should be returned 'id' (DEFAULT), 'name' or 'both'
      """
-     try:
-          id_JSON = __get_JSON()
-          is_game = False
-  
-          while not is_game:
-                    
-               random_entry = random.choice(id_JSON['applist']['apps'])
-               random_appID = str(random_entry['appid']) 
-                                        
-               try:
-                    if not __is_success(random_appID): continue
-                    
-               except : continue
+    
+     idjson = __get_json()
+     is_game = False
 
-               game_JSON = __get_JSON(random_appID)
+     while not is_game:
+          random_entry = random.choice(idjson["applist"]["apps"])
+          random_appid = str(random_entry["appid"])
 
-               if game_JSON[random_appID]['data']['type'] != 'game' : continue 
-               
-               is_game = True
+          if not __is_success(random_appid): continue #TODO what if this is in get json method
+
+          gamejson = __get_json(random_appid)
           
-          if name_or_id == 'name': return random_entry['name']
-          elif name_or_id == 'both': return random_entry['name'], random_appID
-          else: return random_appID
-                              
-     except Exception as e:
+          if gamejson[random_appid]["data"]["type"] != "game": continue
 
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - randomGame. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def random_free_game(name_or_id = 'id'):
-     """ Random free game from steam applist, checks if it is a game and returns based on parameter.
+          is_game = True
      
+     return {random_entry["name"]: random_appid}
+     
+     if name_or_id == "name": return random_entry["name"]
+     elif name_or_id == "both": return random_entry["name"], random_appid
+     else: return random_appid
+
+
+
+def random_free_game(name_or_id: str="id"):
+     """Random free game from steam applist, checks if it is a game and returns based on parameter.
+
      :param name_or_id: What should be returned 'id' (DEFAULT), 'name' or 'both'
      """
 
      # <This function may take some time to proccess>
-     #TODO Create possibilty to generate a JSON file of all free games with an update function
+     # TODO Create possibilty to generate a JSON file of all free games with an update function
 
-     try:
-          id_JSON = __get_JSON()
-          is_game = False
 
-          while not is_game:
+     idjson = __get_json()
+     is_game = False
 
-               random_entry = random.choice(id_JSON['applist']['apps'])
-               random_appID = str(random_entry['appid'])
+     while not is_game:
 
-               try:
-                    if not __is_success(random_appID): continue
+          random_entry = random.choice(idjson["applist"]["apps"])
+          random_appid = str(random_entry["appid"])
 
-               except: continue
+          if not __is_success(random_appid): continue
 
-               game_JSON = __get_JSON(random_appID)
-               
-               if not is_free(random_appID): continue
-               if game_JSON[random_appID]['data']['type'] != 'game': continue
+          game_JSON = __get_json(random_appid)
 
-               is_game = True
-          
-          if name_or_id == 'name': return random_entry['name']
-          elif name_or_id == 'both': return random_entry['name'], random_appID
-          else: return random_appID
+          if not check_if_free(random_appid): continue
+          if game_JSON[str(random_appid)]["data"]["type"] != "game": continue
 
-     except Exception as e: 
+          is_game = True
 
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - randomFreeGame. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
+     if name_or_id == "name": return random_entry["name"]
+     elif name_or_id == "both": return random_entry["name"], random_appid
+     else: return random_appid
 
-               return None
 
 
 def game_header_image(gameID):
-     """ Get header image of the game.
-     :returns: Link as a string to the image.
-     
-     """
-     # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
-     
-     try: 
-          if not __is_success(gameID) : return None
+    """Get header image of the game.
+    :returns: Link as a string to the image.
 
-          game_JSON = __get_JSON(gameID)
+    """
+    # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
 
-          return game_JSON[str(gameID)]['data']['header_image']
+    try:
+        if not __is_success(gameID):
+            return None
 
-     except Exception as e:
+        game_JSON = __get_json(gameID)
 
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gameHeaderImage. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
+        return game_JSON[str(gameID)]["data"]["header_image"]
 
-               return None
+    except Exception as e:
+
+        print("######################################################")
+        print(
+            f"ERROR OF PUBLIC FUNCTION - gameHeaderImage. ERROR AS : \n {traceback.format_exc()}"
+        )
+        print("######################################################")
+
+        return None
 
 
 def game_developers(gameID):
-     """ Get's a list of game developers, and returns it as a string.
+    """Get's a list of game developers, and returns it as a string.
 
-     :returns: Connected elemets from an array as a string 
-     """
+    :returns: Connected elemets from an array as a string
+    """
 
-     try:
-          if not __is_success(gameID) : return None
+    try:
+        if not __is_success(gameID):
+            return None
 
-          game_JSON = __get_JSON(gameID)
+        game_JSON = __get_json(gameID)
 
-          return ' , '.join(game_JSON[str(gameID)]['data']['developers'])
+        return " , ".join(game_JSON[str(gameID)]["data"]["developers"])
 
-     except Exception as e:
+    except Exception as e:
 
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gameDev. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
+        print("######################################################")
+        print(
+            f"ERROR OF PUBLIC FUNCTION - gameDev. ERROR AS : \n {traceback.format_exc()}"
+        )
+        print("######################################################")
 
-               return None
+        return None
 
 
 def game_publishers(gameID):
-     """ Get's a list of game publishers, and returns it as a string.
+    """Get's a list of game publishers, and returns it as a string.
 
-     :returns: Connected elemets from an array as a string 
+    :returns: Connected elemets from an array as a string
+    """
+
+    try:
+        if not __is_success(gameID):
+            return None
+
+        game_JSON = __get_json(gameID)
+
+        return " , ".join(game_JSON[str(gameID)]["data"]["publishers"])
+
+    except Exception as e:
+
+        print("######################################################")
+        print(
+            f"ERROR OF PUBLIC FUNCTION - gamePub. ERROR AS : \n {traceback.format_exc()}"
+        )
+        print("######################################################")
+
+        return None
+
+
+def game_genres(gameID, return_array=False):
+    """Get's a list of game generes.
+    :param return_array: If True, returns a raw array of game generes
+    :returns: returns elements from generes array as a string
+
+    """
+
+    try:
+        if not __is_success(gameID):
+            return None
+
+        game_JSON = __get_json(gameID)
+        genres = []
+
+        for item in game_JSON[str(gameID)]["data"]["genres"]:
+
+            genres.append(item["description"])
+
+        return genres if return_array is True else " , ".join(genres)
+
+    except Exception as e:
+
+        print("######################################################")
+        print(
+            f"ERROR OF PUBLIC FUNCTION - gameGenre. ERROR AS : \n {traceback.format_exc()}"
+        )
+        print("######################################################")
+
+        return None
+
+
+def game_categories(gameID, return_array=False):
+    """Get's a list of game categories.
+    :param return_array: If True, returns a raw array of game categories
+    :returns: returns elements from categories array as a string
+
+    """
+
+    try:
+        if not __is_success(gameID):
+            return None
+
+        game_JSON = __get_json(gameID)
+        categories = []
+
+        for item in game_JSON[str(gameID)]["data"]["categories"]:
+
+            categories.append(item["description"])
+
+        return categories if return_array is True else " , ".join(categories)
+
+    except Exception as e:
+
+        print("######################################################")
+        print(
+            f"ERROR OF PUBLIC FUNCTION - gameCat. ERROR AS : \n {traceback.format_exc()}"
+        )
+        print("######################################################")
+
+        return None
+
+
+def game_platforms(gameID, return_dictionary=True):
+    """Get's a dictionary of platforms and returns all platforms the game is avaiable on.
+    :param return_dictionary: If set to True, returns a raw dictionary with all elements without checking which platform provided game is avaiable on
+    :returns: All platform names, the provided game is avaiable on as a string.
+    """
+
+    try:
+        if not __is_success(gameID):
+            return None
+
+        game_JSON = __get_json(gameID)
+        platforms = {}
+        game_on_platform = []
+
+        for item in game_JSON[str(gameID)]["data"]["platforms"]:
+
+            platforms[item] = game_JSON[str(gameID)]["data"]["platforms"][item]
+
+        if return_dictionary is True:
+            return platforms
+
+        for item in platforms:
+
+            if platforms[item] is True:
+                game_on_platform.append(item)
+
+        return " , ".join(game_on_platform)
+
+    except Exception as e:
+
+        print("######################################################")
+        print(
+            f"ERROR OF PUBLIC FUNCTION - gamePlatform. ERROR AS : \n {traceback.format_exc()}"
+        )
+        print("######################################################")
+
+        return None
+
+
+def game_support(gameID) -> list:
+     """Get details about game support.
+     :returns: Connected elements as a string.
      """
 
-     try:
-          if not __is_success(gameID) : return None
+     game_JSON = __get_json(gameID)
+     support_info = []
 
-          game_JSON = __get_JSON(gameID)
+     for item in game_JSON[str(gameID)]["data"]["support_info"]:
+          support_info.append(game_JSON[str(gameID)]["data"]["support_info"][item])
 
-          return ' , '.join(game_JSON[str(gameID)]['data']['publishers'])
-
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gamePub. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
+     return support_info
 
 
-def game_genres(gameID, return_array = False):
-     """ Get's a list of game generes.
-     :param return_array: If True, returns a raw array of game generes
-     :returns: returns elements from generes array as a string
-     
-     """
 
-     try:
-          if not __is_success(gameID) : return None
-
-          game_JSON = __get_JSON(gameID)
-          genres = []
-
-          for item in game_JSON[str(gameID)]['data']['genres']:
-          
-               genres.append(item['description'])
-
-          return genres if return_array is True else ' , '.join(genres)
-
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gameGenre. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def game_categories(gameID, return_array = False):
-     """ Get's a list of game categories.
-     :param return_array: If True, returns a raw array of game categories
-     :returns: returns elements from categories array as a string
-     
-     """
-
-     try:
-          if not __is_success(gameID) : return None
-
-          game_JSON = __get_JSON(gameID)
-          categories = []
-
-          for item in game_JSON[str(gameID)]['data']['categories']:
-
-               categories.append(item['description'])
-
-          return categories if return_array is True else ' , '.join(categories)
-
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gameCat. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def game_platforms(gameID, return_dictionary = True):
-     """ Get's a dictionary of platforms and returns all platforms the game is avaiable on.
-     :param return_dictionary: If set to True, returns a raw dictionary with all elements without checking which platform provided game is avaiable on
-     :returns: All platform names, the provided game is avaiable on as a string.
-     """
-
-
-     try:
-          if not __is_success(gameID) : return None
-
-          game_JSON = __get_JSON(gameID) 
-          platforms = {}
-          game_on_platform = []
-          
-          for item in game_JSON[str(gameID)]['data']['platforms']:
-          
-               platforms[item] = game_JSON[str(gameID)]['data']['platforms'][item]     
-          
-          if return_dictionary is True: return platforms
-
-          for item in platforms:
-
-               if platforms[item] is True: game_on_platform.append(item)
-                         
-          return ' , '.join(game_on_platform)
-
-
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gamePlatform. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-def game_support(gameID):
-     """ Get details about game support.
-     :returns: Connected elements as a string. 
-     """
-     try:
-          if not __is_success(gameID) : return None
-
-          game_JSON = __get_JSON(gameID)
-          support_info = []
-
-          for item in game_JSON[str(gameID)]['data']['support_info']:
-
-               support_info.append(game_JSON[str(gameID)]['data']['support_info'][item])
-
-          return support_info
-
-     except Exception as e:
-
-               print('######################################################')
-               print(f"ERROR OF PUBLIC FUNCTION - gameSupport. ERROR AS : \n {traceback.format_exc()}")
-               print('######################################################')
-
-               return None
-
-
-#game = 'scavengers'
-#testID = validateGame(game, returnappID=True)
-#if validateGame(game):
+# game = 'scavengers'
+# testID = validateGame(game, returnappID=True)
+# if validateGame(game):
 #     print(f"Test: {gameDesc(testID)}")
-#else: print(f"Else test: {validateGame(game, suggestions=True)}")
-#print(storePage(testID))
-#print(gamePrice(testID))
-#print(gameDiscount(testID))
+# else: print(f"Else test: {validateGame(game, suggestions=True)}")
+# print(storePage(testID))
+# print(gamePrice(testID))
+# print(gameDiscount(testID))
 
-#game = randomGame('id')
-#print(gameSupport(game))
-#print(f"{gameDev(game)} -- {gamePub(game)}")
-
-
-
+# game = randomGame('id')
+# print(gameSupport(game))
+# print(f"{gameDev(game)} -- {gamePub(game)}")
