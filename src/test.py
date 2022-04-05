@@ -50,10 +50,14 @@ while usermode != EXIT:
                exists = True
 
      elif usermode == RANDOM_GAME : 
-          gamename, gameid = BAS.get_random_game('both')
+          game_data = BAS.get_random_game()
+          gamename = game_data['name']
+          gameid = str(game_data['appid'])
 
      elif usermode == FREE_RANDOM_GAME :       
-          gamename, gameid = BAS.random_free_game('both')
+          game_data = BAS.random_free_game()
+          gamename = game_data['name']
+          gameid = str(game_data['appid'])
 
      discount = BAS.get_game_discount(gameid)
 

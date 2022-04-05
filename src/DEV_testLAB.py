@@ -1,4 +1,6 @@
-from functions import game_suggestions
+import functions
 
-
-game_suggestions('dead by daylight')
+game = functions.get_random_game()
+print(game['appid'])
+print(functions.game_support(game['appid']))
+print(game['name'])

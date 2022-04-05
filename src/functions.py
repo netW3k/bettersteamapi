@@ -1,6 +1,5 @@
 import json
 import random
-import traceback
 from difflib import get_close_matches as gcm
 
 import requests
@@ -130,10 +129,10 @@ def get_game_discount(gameid: str, check_if_game_is_on_discount: bool = False):
      return True if check_if_game_is_on_discount and discount > 0 else discount
 
 
-def get_random_game() -> dict:
+def get_random_game() -> dict[str, str]:
      """Random game from steam applist, checks if it is a game and returns based on parameter.
-
-     :param name_or_id: What should be returned 'id' (DEFAULT), 'name' or 'both'
+        
+        :returns: a dictionary with a 'name' and a 'appid' of the game
      """
     
      idjson = __get_json()
@@ -142,7 +141,6 @@ def get_random_game() -> dict:
      while not is_game:
           random_entry = random.choice(idjson["applist"]["apps"])
           random_appid = str(random_entry["appid"])
-
           if not __is_success(random_appid): continue #TODO what if this is in get json method
 
           gamejson = __get_json(random_appid)
@@ -150,19 +148,15 @@ def get_random_game() -> dict:
           if gamejson[random_appid]["data"]["type"] != "game": continue
 
           is_game = True
+          random_game = {"name" : random_entry['name'], "appid" : str(random_entry['appid'])}
      
-     return {random_entry["name"]: random_appid}
+     return random_game
      
-     if name_or_id == "name": return random_entry["name"]
-     elif name_or_id == "both": return random_entry["name"], random_appid
-     else: return random_appid
 
-
-
-def random_free_game(name_or_id: str="id"):
+def random_free_game() -> dict:
      """Random free game from steam applist, checks if it is a game and returns based on parameter.
-
-     :param name_or_id: What should be returned 'id' (DEFAULT), 'name' or 'both'
+        
+        :returns: a dictionary with a 'name' and 'appid' of the game.
      """
 
      # <This function may take some time to proccess>
@@ -186,201 +180,92 @@ def random_free_game(name_or_id: str="id"):
 
           is_game = True
 
-     if name_or_id == "name": return random_entry["name"]
-     elif name_or_id == "both": return random_entry["name"], random_appid
-     else: return random_appid
+     return random_entry
 
 
 
-def game_header_image(gameID):
-    """Get header image of the game.
-    :returns: Link as a string to the image.
+def game_header_image(gameid: str) -> str:
+     """Get the header image of the game.
+     :returns: Link as a string to the image.
+     """
+     # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
 
-    """
-    # <NOTE: This function returns a link to the image, this means that you need to proccess the return value and show it on your own>
+     gamejson = __get_json(gameid)
 
-    try:
-        if not __is_success(gameID):
-            return None
+     return gamejson[gameid]["data"]["header_image"]
 
-        game_JSON = __get_json(gameID)
 
-        return game_JSON[str(gameID)]["data"]["header_image"]
-
-    except Exception as e:
-
-        print("######################################################")
-        print(
-            f"ERROR OF PUBLIC FUNCTION - gameHeaderImage. ERROR AS : \n {traceback.format_exc()}"
-        )
-        print("######################################################")
-
-        return None
-
-
-def game_developers(gameID):
-    """Get's a list of game developers, and returns it as a string.
-
-    :returns: Connected elemets from an array as a string
-    """
-
-    try:
-        if not __is_success(gameID):
-            return None
-
-        game_JSON = __get_json(gameID)
-
-        return " , ".join(game_JSON[str(gameID)]["data"]["developers"])
-
-    except Exception as e:
-
-        print("######################################################")
-        print(
-            f"ERROR OF PUBLIC FUNCTION - gameDev. ERROR AS : \n {traceback.format_exc()}"
-        )
-        print("######################################################")
-
-        return None
-
-
-def game_publishers(gameID):
-    """Get's a list of game publishers, and returns it as a string.
-
-    :returns: Connected elemets from an array as a string
-    """
-
-    try:
-        if not __is_success(gameID):
-            return None
-
-        game_JSON = __get_json(gameID)
-
-        return " , ".join(game_JSON[str(gameID)]["data"]["publishers"])
-
-    except Exception as e:
-
-        print("######################################################")
-        print(
-            f"ERROR OF PUBLIC FUNCTION - gamePub. ERROR AS : \n {traceback.format_exc()}"
-        )
-        print("######################################################")
-
-        return None
-
-
-def game_genres(gameID, return_array=False):
-    """Get's a list of game generes.
-    :param return_array: If True, returns a raw array of game generes
-    :returns: returns elements from generes array as a string
-
-    """
-
-    try:
-        if not __is_success(gameID):
-            return None
-
-        game_JSON = __get_json(gameID)
-        genres = []
-
-        for item in game_JSON[str(gameID)]["data"]["genres"]:
-
-            genres.append(item["description"])
-
-        return genres if return_array is True else " , ".join(genres)
-
-    except Exception as e:
-
-        print("######################################################")
-        print(
-            f"ERROR OF PUBLIC FUNCTION - gameGenre. ERROR AS : \n {traceback.format_exc()}"
-        )
-        print("######################################################")
-
-        return None
-
-
-def game_categories(gameID, return_array=False):
-    """Get's a list of game categories.
-    :param return_array: If True, returns a raw array of game categories
-    :returns: returns elements from categories array as a string
-
-    """
-
-    try:
-        if not __is_success(gameID):
-            return None
-
-        game_JSON = __get_json(gameID)
-        categories = []
-
-        for item in game_JSON[str(gameID)]["data"]["categories"]:
-
-            categories.append(item["description"])
-
-        return categories if return_array is True else " , ".join(categories)
-
-    except Exception as e:
-
-        print("######################################################")
-        print(
-            f"ERROR OF PUBLIC FUNCTION - gameCat. ERROR AS : \n {traceback.format_exc()}"
-        )
-        print("######################################################")
-
-        return None
-
-
-def game_platforms(gameID, return_dictionary=True):
-    """Get's a dictionary of platforms and returns all platforms the game is avaiable on.
-    :param return_dictionary: If set to True, returns a raw dictionary with all elements without checking which platform provided game is avaiable on
-    :returns: All platform names, the provided game is avaiable on as a string.
-    """
-
-    try:
-        if not __is_success(gameID):
-            return None
-
-        game_JSON = __get_json(gameID)
-        platforms = {}
-        game_on_platform = []
-
-        for item in game_JSON[str(gameID)]["data"]["platforms"]:
-
-            platforms[item] = game_JSON[str(gameID)]["data"]["platforms"][item]
-
-        if return_dictionary is True:
-            return platforms
-
-        for item in platforms:
-
-            if platforms[item] is True:
-                game_on_platform.append(item)
-
-        return " , ".join(game_on_platform)
-
-    except Exception as e:
-
-        print("######################################################")
-        print(
-            f"ERROR OF PUBLIC FUNCTION - gamePlatform. ERROR AS : \n {traceback.format_exc()}"
-        )
-        print("######################################################")
-
-        return None
-
-
-def game_support(gameID) -> list:
-     """Get details about game support.
-     :returns: Connected elements as a string.
+def game_developers(gameID: str) -> list:
+     """Get a list of game developers..
      """
 
      game_JSON = __get_json(gameID)
+     
+     return game_JSON[gameID]["data"]["developers"]
+
+
+def game_publishers(gameid: str) -> list:
+     """Get a list of game publishers.
+     """
+
+     gamejson = __get_json(gameid)
+
+     return gamejson[gameid]["data"]["publishers"]
+
+
+def game_genres(gameid: str) -> list:
+     """Get a list of game generes.
+     """
+
+     gamejson = __get_json(gameid)
+     genres = []
+
+     for item in gamejson[gameid]["data"]["genres"]:
+          genres.append(item["description"])
+
+     return genres
+
+
+def game_categories(gameid: str) -> list:
+     """Get a list of game categories.
+
+     """
+
+     gamejson = __get_json(gameid)
+     categories = []
+
+     for item in gamejson[str(gameid)]["data"]["categories"]:
+          categories.append(item["description"])
+
+     return categories 
+
+
+
+def game_platforms(gameid: str) -> dict:
+     """Get's a dictionary of platforms and returns all platforms the game is avaiable on.
+     :returns: All platform names, the provided game is avaiable on as a string.
+     """
+
+     gamejson = __get_json(gameid)
+     platforms = {}
+
+     for item in gamejson[gameid]["data"]["platforms"]:
+          platforms[item] = gamejson[gameid]["data"]["platforms"][item]
+
+     return platforms
+
+
+def game_support(gameid: str) -> list:
+     """Get list with support details.
+     """
+
+     gamejson = __get_json(gameid)
      support_info = []
 
-     for item in game_JSON[str(gameID)]["data"]["support_info"]:
-          support_info.append(game_JSON[str(gameID)]["data"]["support_info"][item])
+     for item in gamejson[gameid]["data"]["support_info"]:
+          support_info.append(gamejson[gameid]["data"]["support_info"][item])
 
-     return support_info
+     return gamejson[gameid]["data"]["support_info"]
 
 
 
