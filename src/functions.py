@@ -6,37 +6,37 @@ import requests
 
 
 def __get_json(gameid: str = 'None') -> dict:
-    """This function requests steam API, converts it into a JSON and returns it
+     """This function requests steam API, converts it into a JSON and returns it
 
-    :param gameid: If empty this function will request API with all id's associated with a gamename
-    :returns: JSON with all id's with gamenames existing in steam DB or JSON with details about a game (if gameID has a valid ID of the game)
-    """
-    # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
+     :param gameid: If empty this function will request API with all id's associated with a gamename
+     :returns: JSON with all id's with gamenames existing in steam DB or JSON with details about a game (if gameID has a valid ID of the game)
+     """
+     # <IF SOMETHING GOES WRONG WITH THIS FUNCTION IT WILL RETURN 'NONE' WHICH ESSENTIALY WILL MAKE EVERYTHING FALSE>
 
-    API1 = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json"
-    API2 = "https://store.steampowered.com/api/appdetails?appids="
+     API1 = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json"
+     API2 = "https://store.steampowered.com/api/appdetails?appids="
 
-    configjson = json.load(open(file="./config.json", encoding="utf-8"))
+     configjson = json.load(open(file="./config.json", encoding="utf-8"))
 
-    if gameid == 'None': return requests.get(API1).json()
+     if gameid == 'None': return requests.get(API1).json()
 
-    return requests.get(f"{API2}{gameid}&cc={configjson['wished_country_currency']}").json()
-
-
-def __is_success(id: str) -> bool:
-    """
-    Returns whatever value is under JSON 'success' key, if None it returns False. Used to check if a game is recognized as successfull in steam DB.
-    This function is mainly used to check if a game is True under 'success', if not, it means that something is wrong, and therfore it is used as a
-    prevention function (if returns False, evereything else will return False or None).
-    """
-    # <This is function is needed in order to prevent any 'None-transcipable' errors, and mainly to check if Steam database consider the enry as successfull>
-
-    game_json = __get_json(id)
-
-    return game_json[id]["success"]
+     return requests.get(f"{API2}{gameid}&cc={configjson['wished_country_currency']}").json()
 
 
-def validate_game(game: str, return_gameid: bool = False) -> bool:
+def __is_success(gameid: str) -> bool:
+     """
+     Returns whatever value is under JSON 'success' key, if None it returns False. Used to check if a game is recognized as successfull in steam DB.
+     This function is mainly used to check if a game is True under 'success', if not, it means that something is wrong, and therfore it is used as a
+     prevention function (if returns False, evereything else will return False or None).
+     """
+     # <This is function is needed in order to prevent any 'None-transcipable' errors, and mainly to check if Steam database consider the enry as successfull>
+
+     game_json = __get_json(gameid)
+     
+     return game_json[gameid]["success"]
+
+
+def validate_game(game: str, return_gameid: bool = False):
      """Validates if provided game exists in steam DB.
 
      :param game: Name of the game to validate.
@@ -48,9 +48,9 @@ def validate_game(game: str, return_gameid: bool = False) -> bool:
      idjson = __get_json()
 
      for item in idjson["applist"]["apps"]:
-        if item["name"].lower() == game:
-            gameid = item["appid"]
-            return (gameid if return_gameid else True)  # <If the game exists and steam do have any record of the game, this should return True.>
+        if item["name"].lower() == game and __is_success(str(item['appid'])):
+            gameid = str(item["appid"])
+            return gameid if return_gameid else True # <If the game exists and steam do have any record of the game, this should return True.>
 
      return False
 
@@ -99,7 +99,7 @@ def get_store_page(gameid: int) -> str:
 
 
 def get_game_price(appid: str) -> str:
-     """Get price of the game. (This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from)
+     """This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from)
 
      :returns: String with price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly.
      """
@@ -107,26 +107,39 @@ def get_game_price(appid: str) -> str:
      if check_if_free(appid): return "The game is free!"
 
      gamejson = __get_json(appid)
-     currency = gamejson[str(appid)]["data"]["price_overview"]["currency"]
-     price = gamejson[str(appid)]["data"]["price_overview"]["final_formatted"]
+     
+     try:
+          currency = gamejson[str(appid)]["data"]["price_overview"]["currency"]
+          price = gamejson[str(appid)]["data"]["price_overview"]["final_formatted"]
+
+     except KeyError:
+          print('Could not find the specified key in JSON file.')
+          return 'None'
 
      return f"{price} {currency}"
 
 
-def get_game_discount(gameid: str, check_if_game_is_on_discount: bool = False):
-     """Get the discount of the game.
-
-     :check_if_game_is_on_discount: If set to True, this function will return True if the provided game is on discount.
-     :returns: Integer
-     """
-    
-     if check_if_free(gameid) and check_if_game_is_on_discount == True: return False, "FREE"
-     elif check_if_free(gameid) and check_if_game_is_on_discount == False: return "No discount, the game is free to play!"
-     
+def get_game_discount(gameid: str,) -> str:
+         
      gamejson = __get_json(gameid)
-     discount = gamejson[str(gameid)]["data"]["price_overview"]["discount_percent"]
+     discount = str(gamejson[str(gameid)]["data"]["price_overview"]["discount_percent"])
 
-     return True if check_if_game_is_on_discount and discount > 0 else discount
+     return discount
+
+def check_if_game_on_discount(gameid: str) -> bool:
+     if check_if_free(gameid): return False
+
+     gamejson = __get_json(gameid)
+
+     try:
+
+          discount = gamejson[str(gameid)]["data"]["price_overview"]["discount_percent"]
+
+     except KeyError: 
+          print('Could not find the specified key in the JSON file')
+          return False
+
+     return True if discount > 0 else False
 
 
 def get_random_game() -> dict[str, str]:
@@ -141,7 +154,8 @@ def get_random_game() -> dict[str, str]:
      while not is_game:
           random_entry = random.choice(idjson["applist"]["apps"])
           random_appid = str(random_entry["appid"])
-          if not __is_success(random_appid): continue #TODO what if this is in get json method
+
+          if not __is_success(random_appid): continue 
 
           gamejson = __get_json(random_appid)
           
@@ -200,9 +214,12 @@ def game_developers(gameID: str) -> list:
      """
 
      game_JSON = __get_json(gameID)
-     
-     return game_JSON[gameID]["data"]["developers"]
 
+     try:     
+          return game_JSON[gameID]["data"]["developers"]
+     except KeyError:
+          print("Could not find the specified key in JSON file.")
+          return []
 
 def game_publishers(gameid: str) -> list:
      """Get a list of game publishers.
@@ -227,8 +244,7 @@ def game_genres(gameid: str) -> list:
 
 
 def game_categories(gameid: str) -> list:
-     """Get a list of game categories.
-
+     """Get a list of all categories the game is listed as. 
      """
 
      gamejson = __get_json(gameid)
@@ -240,10 +256,13 @@ def game_categories(gameid: str) -> list:
      return categories 
 
 
-
 def game_platforms(gameid: str) -> dict:
-     """Get's a dictionary of platforms and returns all platforms the game is avaiable on.
-     :returns: All platform names, the provided game is avaiable on as a string.
+     """Get dict of platforms.
+     :returns Dictionary with all steam supported platforms and bool value 
+     on wheter or not the game is avaiable on named platform.
+     >>> game = game_platforms('1184560')
+     
+     Keys: 'windows' | 'mac' | 'linux'
      """
 
      gamejson = __get_json(gameid)
@@ -255,29 +274,14 @@ def game_platforms(gameid: str) -> dict:
      return platforms
 
 
-def game_support(gameid: str) -> list:
-     """Get list with support details.
+def game_support(gameid: str) -> dict:
+     """Get dict with support details of the game. 
+     >>> game_support('1184560')
+     {'url': 'https://www.rocketpandagames.com', 'email': ''}
+        Keys: 'url' | 'email'
      """
 
      gamejson = __get_json(gameid)
-     support_info = []
-
-     for item in gamejson[gameid]["data"]["support_info"]:
-          support_info.append(gamejson[gameid]["data"]["support_info"][item])
 
      return gamejson[gameid]["data"]["support_info"]
 
-
-
-# game = 'scavengers'
-# testID = validateGame(game, returnappID=True)
-# if validateGame(game):
-#     print(f"Test: {gameDesc(testID)}")
-# else: print(f"Else test: {validateGame(game, suggestions=True)}")
-# print(storePage(testID))
-# print(gamePrice(testID))
-# print(gameDiscount(testID))
-
-# game = randomGame('id')
-# print(gameSupport(game))
-# print(f"{gameDev(game)} -- {gamePub(game)}")

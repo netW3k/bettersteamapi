@@ -1,4 +1,4 @@
-import functions as BAS
+import functions as bas
 
 usermode = ''
 
@@ -9,7 +9,6 @@ EXIT = '4'
 
 
 while usermode != EXIT:
-
      validInput = False
 
      print('\n#######################################')
@@ -21,7 +20,6 @@ while usermode != EXIT:
      print('4. Exit')
 
      while validInput is False:
-          
           usermode = input('What would you like to do? ')
 
           if usermode == GAME_INFO or usermode == RANDOM_GAME or usermode == FREE_RANDOM_GAME or usermode == EXIT: 
@@ -29,52 +27,49 @@ while usermode != EXIT:
      
      if usermode == EXIT : break
 
-     if usermode == GAME_INFO : 
-          
+     if usermode == GAME_INFO: 
           exists = False
           iteration = 0
-          while exists is False:
 
+          while exists is False:
                iteration += 1
 
-               if iteration != 1: print(BAS.game_suggestions(gamename))
+               if iteration != 1: print(bas.game_suggestions(gamename))
+
                gamename = ''
                gamename = input('What is the name of the game? ')
-               
-               #print(f"Try: {gamename}")
-               #print(BAS.validate_game(gamename))
 
-               if BAS.validate_game(gamename) is False: continue
+               if bas.validate_game(gamename) is False: continue
                    
-               gameid = BAS.validate_game(gamename, True)
+               gameid = bas.validate_game(gamename, True)
                exists = True
 
-     elif usermode == RANDOM_GAME : 
-          game_data = BAS.get_random_game()
+     elif usermode == RANDOM_GAME: 
+          game_data = bas.get_random_game()
           gamename = game_data['name']
           gameid = str(game_data['appid'])
 
      elif usermode == FREE_RANDOM_GAME :       
-          game_data = BAS.random_free_game()
+          game_data = bas.random_free_game()
           gamename = game_data['name']
           gameid = str(game_data['appid'])
 
-     discount = BAS.get_game_discount(gameid)
-
      print(f"\n--- {gamename.upper()} ---\n")
      print(gameid)
-     print(BAS.get_game_description(gameid))
+     print(bas.get_game_description(gameid))
      print('\n')
-     print(f"Check it out --> {BAS.get_store_page(gameid)}")
-     print(f"\nDevelopers: {BAS.game_developers(gameid)}")
-     print(f"Publishers: {BAS.game_publishers(gameid)}")
-     print(f"\nNeed help? Check out this ==> {' , '.join(BAS.game_support(gameid))}")
-     print(f"Comming soon? {BAS.get_release_date(gameid, return_comming_soon = True)}, When? {BAS.get_release_date(gameid)}")
+     print(f"Check it out --> {bas.get_store_page(gameid)}")
+     print(f"\nDevelopers: {' , '.join(bas.game_developers(gameid))}")
+     print(f"Publishers: {' , '.join(bas.game_publishers(gameid))}")
+     print(f"\nNeed help? Check out this ==> {bas.game_support(gameid)}")
+     print(f"Comming soon? {bas.get_release_date(gameid, return_comming_soon = True)}, When? {bas.get_release_date(gameid)}")
 
-     if discount != 0 and isinstance(discount, int):
-          print(f"\nPrice: {BAS.get_game_price(gameid)} with {discount}% discount")
+     if bas.check_if_game_on_discount(gameid):
+          discount = bas.get_game_discount(gameid)
+          
+          print(f"\nPrice: {bas.get_game_price(gameid)} with {discount}% discount")
      else:
-          print(f"\nPrice: {BAS.get_game_price(gameid)}")
+          print(f"\nPrice: {bas.get_game_price(gameid)}")
 
 
 #NOTE          
@@ -82,4 +77,8 @@ while usermode != EXIT:
 # from C family, however it is not currently avaiable for Ubuntu 20+ which I'm currently using, 
 # and therfore the code is not optimized at its fullest potential. 
 # This will change in the future update when I will have access to Python 3.10.
-    
+
+#NOTE
+#This program was intended to show roughly how different methods work together and how to use them
+#in the most basic way. This showcase would be better if methods were used, but 
+#I'm too lazy to do it.
