@@ -1,4 +1,4 @@
-import functions as bas
+import steamfunctions as bas
 
 usermode = ''
 
