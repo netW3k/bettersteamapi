@@ -7,7 +7,6 @@ RANDOM_GAME = '2'
 FREE_RANDOM_GAME = '3'
 EXIT = '4'
 
-
 while usermode != EXIT:
      validInput = False
 
@@ -28,31 +27,28 @@ while usermode != EXIT:
      if usermode == EXIT : break
 
      if usermode == GAME_INFO: 
-          exists = False
-          iteration = 0
+          exist = False
 
-          while exists is False:
-               iteration += 1
-
-               if iteration != 1: print(bas.game_suggestions(gamename))
-
+          while exist is False:
                gamename = ''
                gamename = input('What is the name of the game? ')
 
-               if bas.validate_game(gamename) is False: continue
+               if bas.validate_game(gamename) is False: 
+                    print(bas.game_suggestions(gamename))
+                    continue
                    
                gameid = bas.validate_game(gamename, True)
-               exists = True
+               exist = True
 
      elif usermode == RANDOM_GAME: 
           game_data = bas.get_random_game()
           gamename = game_data['name']
-          gameid = str(game_data['appid'])
+          gameid = game_data['appid']
 
      elif usermode == FREE_RANDOM_GAME :       
           game_data = bas.random_free_game()
           gamename = game_data['name']
-          gameid = str(game_data['appid'])
+          gameid = game_data['appid']
 
      print(f"\n--- {gamename.upper()} ---\n")
      print(gameid)
