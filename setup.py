@@ -5,13 +5,13 @@ with open('README.md', 'r') as fh:
 
 setup(
     name="bettersteamapi",
-    version="0.0.3",
-    description="""bettersteamapi is a python package with functions that helps with requesting data of games from steam.""",
+    version="0.0.5",
+    description="""bettersteamapi is a python package with functions that helps with requesting data of games through steam api.""",
     long_description=long_description,
     long_description_content_type = 'text/markdown',
-    author="Wiktor Wolarz ",
-    author_email="",
-    license="",
+    author="Wiktor Wolarz",
+    author_email="wektor.networking@gmail.com",
+    license="MIT",
     py_modules=["steamfunctions"],
     url="https://github.com/netW3k/BetterSteamAPI",
     package_dir={"": "src"},

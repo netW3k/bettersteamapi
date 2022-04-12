@@ -5,6 +5,33 @@ import random
 import requests
 
 
+def change_wished_currency(currency: str) -> None:
+     """ Change the wished currency you want the price to be in. Default value is USD (us)
+
+          If you change to a non-supported currency , steam will consider it as a default. 
+          Meaning if you type "aud" instead of "au", the price will be shown with the 
+          currency from the country your IP is registred, in other words, the default currency.
+     """ 
+     
+     #TODO Give a list of supported currencies
+     json_object = json.load(open(file="./src/config.json", encoding="utf-8"))
+     json_object['wished_country_currency'] = currency
+
+     json_file = open(file='./src/config.json', mode = 'w')
+
+     json.dump(json_object, json_file)
+     json_file.close()
+
+
+def get_wished_currency() -> str:
+     """ Get the the currency from the config file.
+     """ 
+     json_object = json.load(open(file='./src/config.json', encoding='utf-8')) 
+     #<There is no need to create a constant varaiable for the path to JSON file.
+     # It is only present in two functions, and it's not neccessary to pollute the global space>
+     return json_object['wished_country_currency']
+
+
 def __get_json(gameid: str = 'None') -> dict:
      """This function requests steam API, converts it into a JSON and returns it
 
@@ -14,11 +41,9 @@ def __get_json(gameid: str = 'None') -> dict:
      API1 = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json"
      API2 = "https://store.steampowered.com/api/appdetails?appids="
 
-     configjson = json.load(open(file="./config.json", encoding="utf-8"))
-
      if gameid == 'None': return requests.get(API1).json()
 
-     return requests.get(f"{API2}{gameid}&cc={configjson['wished_country_currency']}").json()
+     return requests.get(f"{API2}{gameid}&cc={get_wished_currency()}").json()
 
 
 def __is_success(gameid: str) -> bool:
@@ -88,9 +113,7 @@ def check_if_free(gameid: str) -> bool:
 
 
 def get_store_page(gameid: int) -> str:
-     configjson = json.load(open(file="./config.json", encoding="utf-8")) 
-
-     return f"https://store.steampowered.com/app/{str(gameid)}/?cc={configjson['wished_country_currency']}"
+     return f"https://store.steampowered.com/app/{str(gameid)}/?cc={get_wished_currency()}"
 
 
 def get_game_price(appid: str) -> str:

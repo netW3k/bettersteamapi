@@ -33,7 +33,10 @@ while usermode != EXIT:
                gamename = ''
                gamename = input('What is the name of the game? ')
 
-               if bas.validate_game(gamename) is False: 
+               if bas.validate_game(gamename) is False:
+                    if not bas.game_suggestions(gamename):
+                         print("No game found!")
+                         continue  
                     print(bas.game_suggestions(gamename))
                     continue
                    

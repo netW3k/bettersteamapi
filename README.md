@@ -1,3 +1,3 @@
-# Project Better Steam API
+# bettersteamapi
 
-[a link](https://github.com/user/repo/blob/branch/other_file.md)
+[![license](https://img.shields.io/github/license/netW3k/bettersteamapi)](https://github.com/netW3k/bettersteamapi/blob/GitInit/LICENSE)
