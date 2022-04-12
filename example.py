@@ -1,7 +1,6 @@
 import steamfunctions as bas
 
 usermode = ''
-
 GAME_INFO = '1'
 RANDOM_GAME = '2'
 FREE_RANDOM_GAME = '3'
@@ -54,7 +53,6 @@ while usermode != EXIT:
           gameid = game_data['appid']
 
      print(f"\n--- {gamename.upper()} ---\n")
-     print(gameid)
      print(bas.get_game_description(gameid))
      print('\n')
      print(f"Check it out --> {bas.get_store_page(gameid)}")

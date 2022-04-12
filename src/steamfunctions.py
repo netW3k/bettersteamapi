@@ -5,37 +5,83 @@ import random
 import requests
 
 
+def __create_json_file(currency: str = 'us') -> None:
+     """ Creates a json file with wished currency variable.
+
+     Args:
+          Currency (str): The currancy you want to change to. (Def set to American Dollar)
+     """
+     with open(file='./src/config.json', mode='w', encoding='utf-8') as json_file:
+          json_file.write(json.dumps({'wished_country_currency': currency}))
+          return 
+
 def change_wished_currency(currency: str) -> None:
      """ Change the wished currency you want the price to be in. Default value is USD (us)
+
+          Some of the supported currencies:
+               'us' - USD ($) American Dollars,
+
+               'nok' - Norwegian Kroner, 
+
+               'au' - AUD (A$) Australian Dollars,
 
           If you change to a non-supported currency , steam will consider it as a default. 
           Meaning if you type "aud" instead of "au", the price will be shown with the 
           currency from the country your IP is registred, in other words, the default currency.
-     """ 
+
+
+     Args:
+          currency (str): The currency you want to change to.
      
-     #TODO Give a list of supported currencies
-     json_object = json.load(open(file="./src/config.json", encoding="utf-8"))
-     json_object['wished_country_currency'] = currency
+     """ 
 
-     json_file = open(file='./src/config.json', mode = 'w')
+     try: 
+          json_file = json.load(open(file="./src/config.json", encoding="utf-8"))
 
-     json.dump(json_object, json_file)
+     except FileNotFoundError:
+          __create_json_file(currency=currency)
+          return
+     except json.JSONDecodeError:
+          with open(file='./src/config.json', mode='w', encoding='utf-8') as json_file:
+               json_file.write(json.dumps({'wished_country_currency': currency}))
+               return
+
+     json_file['wished_country_currency'] = currency
+
+     json.dump(json_file, json_file)
      json_file.close()
-
+         
 
 def get_wished_currency() -> str:
      """ Get the the currency from the config file.
+         If you want to change the current currency use the 'change_wished_currency' function.
+     Returns:
+          String: The current currency that is set in config.json file
      """ 
-     json_object = json.load(open(file='./src/config.json', encoding='utf-8')) 
+     try:
+          json_object = json.load(open(file='./src/config.json', encoding='utf-8')) 
+     except FileNotFoundError:
+          __create_json_file()
+          json_object = json.load(open(file='./src/config.json', encoding='utf-8'))
+     except json.JSONDecodeError:
+          with open(file='./src/config.json', mode='w', encoding='utf-8') as json_file:
+               json_file.write(json.dumps({'wished_country_currency': 'us'}))
+          json_object = json.load(open(file='./src/config.json', encoding='utf-8'))
      #<There is no need to create a constant varaiable for the path to JSON file.
      # It is only present in two functions, and it's not neccessary to pollute the global space>
      return json_object['wished_country_currency']
-
+     
 
 def __get_json(gameid: str = 'None') -> dict:
      """This function requests steam API, converts it into a JSON and returns it
 
-     :param gameid: If empty this function will request API with all id's associated with a gamename
+     Args:
+          gameid (str): If empty this function will request API with all id's associated with a gamename
+                        otherwise it will dict with all data of the game.
+
+     Returns:
+          Dictionary: If args is empty -> dict with ids and names of all games in steam DB.
+                      If args not empty -> dict with all information about the specified game.
      """
 
      API1 = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json"
@@ -78,7 +124,8 @@ def validate_game(game: str, return_gameid: bool = False):
 def game_suggestions(game: str) -> list[str]:
      """ Returns suggestions based on game value.
 
-     :returns: list of strings that are similair to game value
+     Returns: 
+          List: Of strings that are similair to 'game' argument
      """
 
      game = game.lower()
@@ -95,8 +142,10 @@ def get_game_description(gameid: str) -> str:
 
 def get_release_date(gameid: str, return_comming_soon: bool = False) -> str:
      """Get the release date of the provided game.
-
-     :param return_coming__soon: if True, it checks and returns if a game officialy released or is releasing soon on platform as bool.
+     
+     Args:
+      Return_coming_soon: if True, it checks and returns if a game officialy 
+      released or is releasing soon on platform as bool.
      """
 
      gamejson = __get_json(gameid)
@@ -112,14 +161,15 @@ def check_if_free(gameid: str) -> bool:
      return (game_json[str(gameid)]["data"]["is_free"] if game_json is not None else False)
 
 
-def get_store_page(gameid: int) -> str:
-     return f"https://store.steampowered.com/app/{str(gameid)}/?cc={get_wished_currency()}"
+def get_store_page(gameid: str) -> str:
+     return f"https://store.steampowered.com/app/{gameid}/?cc={get_wished_currency()}"
 
 
 def get_game_price(appid: str) -> str:
      """This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from
 
-     :returns: String with price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly.
+     Returns: 
+          String: Price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly.
      """
     
      if check_if_free(appid): return "The game is free!"
@@ -138,6 +188,11 @@ def get_game_price(appid: str) -> str:
 
 
 def get_game_discount(gameid: str,) -> str:
+     """ Gets the discount of the game.
+
+     Returns:
+          String: The discount value in percent. 
+     """
      gamejson = __get_json(gameid)
      discount = str(gamejson[str(gameid)]["data"]["price_overview"]["discount_percent"])
 
@@ -145,6 +200,14 @@ def get_game_discount(gameid: str,) -> str:
 
 
 def check_if_game_on_discount(gameid: str) -> bool:
+     """ Check if the provided game is on discount.
+
+     Raises:
+          KeyError: One of the keys are not present in the JSON file of the provided game.
+     
+     Returns:
+          Boolean: True if the game is on discount (not 0), False if the game is not on discount (0)
+     """
      if check_if_free(gameid): return False
 
      gamejson = __get_json(gameid)
@@ -218,7 +281,6 @@ def random_free_game() -> dict[str, str]:
      return random_game
 
 
-
 def game_header_image(gameid: str) -> str:
      """Get the header image of the game.
      :returns: Link as a string to the image.
@@ -231,13 +293,17 @@ def game_header_image(gameid: str) -> str:
 
 
 def game_developers(gameID: str) -> list[str]:
-     """Get a list of game developers..
+     """Get a list of game developers.
+
+     Raises:
+          KeyError: One of the keys are not present in the JSON file of the provided game.
      """
 
      game_JSON = __get_json(gameID)
 
      try:     
           return game_JSON[gameID]['data']['developers']
+
      except KeyError:
           print("Could not find the specified key in JSON file.")
           return []
@@ -279,9 +345,9 @@ def game_categories(gameid: str) -> list[str]:
 
 def game_platforms(gameid: str) -> dict[str, bool]:
      """Get dict of platforms.
-     :returns Dictionary with all steam supported platforms and bool value 
-     on wheter or not the game is avaiable on named platform.
-     >>> game = game_platforms('1184560')
+
+     Returns: Dictionary with all steam supported platforms and bool value 
+     on whether the game is avaiable on named platform or not.
      
      Keys: 'windows' | 'mac' | 'linux'
      """
@@ -297,12 +363,10 @@ def game_platforms(gameid: str) -> dict[str, bool]:
 
 def game_support(gameid: str) -> dict[str, str]:
      """Get dict with support details of the game. 
-     >>> game_support('1184560')
-     {'url': 'https://www.rocketpandagames.com', 'email': ''}
+     
         Keys: 'url' | 'email'
      """
 
      gamejson = __get_json(gameid)
 
      return gamejson[gameid]['data']['support_info']
-
