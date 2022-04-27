@@ -16,7 +16,7 @@ Tested on Python 3.8 and 3.9 on Ubuntu 20.04 (Python 3.10 is not yet officially 
 
 >`pip install -U bettersteamapi`
 
-For more information see the [Install]().
+For more information see the [documentation]().
 
 ## Help
 See [documentation]() for more details about functions and how they work. 
