@@ -1,0 +1,1 @@
+wished_country_currency = 'us'

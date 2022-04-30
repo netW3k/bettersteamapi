@@ -1,0 +1,5 @@
+include *.py
+include *.txt
+include LICENSE
+recursive-include assets *.md
+recursive-include package *

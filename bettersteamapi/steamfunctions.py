@@ -1,19 +1,10 @@
 import difflib
-import json
 import random
 
 import requests
 
+import bettersteamapi.config as config
 
-def __create_json_file(currency: str = 'us') -> None:
-     """ Creates a json file with wished currency variable.
-
-     Args:
-          Currency (str): The currancy you want to change to. (Def set to American Dollar)
-     """
-     with open(file='./src/config.json', mode='w', encoding='utf-8') as json_file:
-          json_file.write(json.dumps({'wished_country_currency': currency}))
-          return 
 
 def change_wished_currency(currency: str) -> None:
      """ Change the wished currency you want the price to be in. Default value is USD (us)
@@ -27,50 +18,23 @@ def change_wished_currency(currency: str) -> None:
 
           If you change to a non-supported currency , steam will consider it as a default. 
           Meaning if you type "aud" instead of "au", the price will be shown with the 
-          currency from the country your IP is registred, in other words, the default currency.
-
+          currency from the country your IP is registred in.
 
      Args:
           currency (str): The currency you want to change to.
      
      """ 
+     config.wished_country_currency = currency
 
-     try: 
-          json_file = json.load(open(file="./src/config.json", encoding="utf-8"))
-
-     except FileNotFoundError:
-          __create_json_file(currency=currency)
-          return
-     except json.JSONDecodeError:
-          with open(file='./src/config.json', mode='w', encoding='utf-8') as json_file:
-               json_file.write(json.dumps({'wished_country_currency': currency}))
-               return
-
-     json_file['wished_country_currency'] = currency
-
-     json.dump(json_file, json_file)
-     json_file.close()
          
-
 def get_wished_currency() -> str:
      """ Get the the currency from the config file.
          If you want to change the current currency use the 'change_wished_currency' function.
      Returns:
           String: The current currency that is set in config.json file
      """ 
-     try:
-          json_object = json.load(open(file='./src/config.json', encoding='utf-8')) 
-     except FileNotFoundError:
-          __create_json_file()
-          json_object = json.load(open(file='./src/config.json', encoding='utf-8'))
-     except json.JSONDecodeError:
-          with open(file='./src/config.json', mode='w', encoding='utf-8') as json_file:
-               json_file.write(json.dumps({'wished_country_currency': 'us'}))
-          json_object = json.load(open(file='./src/config.json', encoding='utf-8'))
-     #<There is no need to create a constant varaiable for the path to JSON file.
-     # It is only present in two functions, and it's not neccessary to pollute the global space>
-     return json_object['wished_country_currency']
-     
+     return config.wished_country_currency
+
 
 def __get_json(gameid: str = 'None') -> dict:
      """This function requests steam API, converts it into a JSON and returns it
@@ -165,20 +129,20 @@ def get_store_page(gameid: str) -> str:
      return f"https://store.steampowered.com/app/{gameid}/?cc={get_wished_currency()}"
 
 
-def get_game_price(appid: str) -> str:
+def get_game_price(gameid: str) -> str:
      """This function sometimes returns other currencies than expected. This most likely has to do with servers and which one you request from
 
      Returns: 
           String: Price and name of the currency. This is the final price, which means that if a game is on discount, this price will change accordingly.
      """
     
-     if check_if_free(appid): return "The game is free!"
+     if check_if_free(gameid): return "The game is free!"
 
-     gamejson = __get_json(appid)
+     gamejson = __get_json(gameid)
      
      try:
-          currency = gamejson[str(appid)]["data"]["price_overview"]["currency"]
-          price = gamejson[str(appid)]["data"]["price_overview"]["final_formatted"]
+          currency = gamejson[str(gameid)]["data"]["price_overview"]["currency"]
+          price = gamejson[str(gameid)]["data"]["price_overview"]["final_formatted"]
 
      except KeyError:
           print('Could not find the specified key in JSON file.')

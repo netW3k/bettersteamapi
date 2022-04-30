@@ -1,21 +1,19 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
 with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setup(
     name="bettersteamapi",
-    version="0.0.5",
-    description="""bettersteamapi is a python package with functions that helps with requesting data of games through steam api.""",
+    version="0.1.1",
+    description="""bettersteamapi is a python package with a set of functions to easily access data of steam games via steam API""",
     long_description=long_description,
     long_description_content_type = 'text/markdown',
     author="Wiktor Wolarz",
     author_email="wektor.networking@gmail.com",
     license="MIT",
-    py_modules=["steamfunctions"],
+    py_modules=["bettersteamapi.steamfunctions", "bettersteamapi.config"],
     url="https://github.com/netW3k/BetterSteamAPI",
-    package_dir={"": "src"},
-    packages=find_packages(where='src'),
     python_requires = '>= 3.8',
     classifiers=[
         "Programming Language :: Python :: 3.8",

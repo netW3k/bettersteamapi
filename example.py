@@ -1,10 +1,11 @@
-import steamfunctions as bas
+from bettersteamapi import steamfunctions as bas
 
 usermode = ''
 GAME_INFO = '1'
 RANDOM_GAME = '2'
 FREE_RANDOM_GAME = '3'
 EXIT = '4'
+
 
 while usermode != EXIT:
      validInput = False
