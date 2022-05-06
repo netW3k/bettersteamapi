@@ -9,10 +9,12 @@ A set of functions to easily access game data such as price of the game, discoun
 
 Gain access to prices, discounts, and a special game roulette!
 
-Tested on Python 3.8 and 3.9 on Ubuntu 20.04 (Python 3.10 is not yet officially released on Ubuntu 20.04)
+Tested on Python 3.9 on Ubuntu 20.04 (Python 3.10 is not yet officially released on Ubuntu 20.04)
 
 
-WORK IN PROGRESS
+Currently only on PIP test instance 
+
+WORK IN PROGRESS (Python 3.9+)
 
 ## Installation
 
