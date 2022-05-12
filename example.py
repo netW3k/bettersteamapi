@@ -1,4 +1,4 @@
-from bettersteamapi import steamfunctions as bas
+from bettersteamapi import gamedata as bas
 
 usermode = ''
 GAME_INFO = '1'

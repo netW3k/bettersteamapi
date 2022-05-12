@@ -1,0 +1,17 @@
+#TODO Check out JSdoc3 fro documentation
+
+# HOW TO INSTALL bettersteamapi
+Libary currently avaiable on PYPI test instance
+''' Bash
+pip install -i https://test.pypi.org/simple/ bettersteamapi
+'''
+
+# CONTRIBUTION
+Currently there's no anticipation of any contributions
+
+# EXAMPLE
+Under example.py
+
+# gamedata MODULE functions 
+
+
